@@ -1,5 +1,59 @@
-server:
-  port: 8083
 spring:
   application:
-    name: service-chart
+    name: service-audit
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/mu_cloud_audit?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: 280939
+    type: com.alibaba.druid.pool.DruidDataSource
+    druid:
+      initial-size: 5
+      min-idle: 5
+      max-active: 20
+      max-wait: 60000
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password:
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 2
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+        namespace: a2f1df1d-29d7-4bfe-85f5-7beec09bd563
+server:
+  port: 8084
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto
+
+langchain4j:
+  openai:
+    api-key: ${DEEPSEEK_API_KEY:your-api-key-here}
+    base-url: https://api.siliconflow.cn/v1
+    model-name: deepseek-ai/DeepSeek-V3
+    timeout: 60s
+    max-retries: 2
+    log-requests: true
+    log-responses: true
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  level:
+    com.echos: debug
