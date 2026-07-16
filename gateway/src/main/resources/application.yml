@@ -12,30 +12,47 @@ spring:
           enabled: true
           lower-case-service-id: true
       routes:
-        - id: service-user
-          uri: lb://service-user
-          predicates:
-            - Path=/api/user/**
-        - id: service-chart
-          uri: lb://service-chart
-          predicates:
-            - Path=/api/chart/**
-        - id: service-agent
-          uri: lb://service-agent
-          predicates:
-            - Path=/api/agent/**
-        - id: service-audit
-          uri: lb://service-audit
-          predicates:
-            - Path=/api/audit/**
-        - id: service-vote
-          uri: lb://service-vote
-          predicates:
-            - Path=/api/vote/**
-        - id: service-websocket
-          uri: lb://service-websocket
-          predicates:
-            - Path=/api/ws/**
+              - id: service-user
+                uri: lb://service-user
+                predicates:
+                   - Path=/music/user/**
+                filters:
+              - StripPrefix=1    # 🔑 剥掉第一层路径 /music
+
+              - id: service-chart
+                uri: lb://service-chart
+                predicates:
+                  - Path=/music/chart/**
+                filters:
+                  - StripPrefix=1
+
+              - id: service-agent
+                uri: lb://service-agent
+                predicates:
+                  - Path=/music/agent/**
+                filters:
+                  - StripPrefix=1
+
+              - id: service-audit
+                uri: lb://service-audit
+                predicates:
+                  - Path=/music/audit/**
+                filters:
+                  - StripPrefix=1
+
+              - id: service-vote
+                uri: lb://service-vote
+                predicates:
+                  - Path=/music/vote/**
+                filters:
+                  - StripPrefix=1
+
+              - id: service-websocket
+                uri: lb://service-websocket
+                predicates:
+                  - Path=/music/ws/**
+                filters:
+                  - StripPrefix=1
       globalcors:
         cors-configurations:
           '[/**]':
