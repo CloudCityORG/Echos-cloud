@@ -1,0 +1,103 @@
+﻿package com.murk.serviceuser.Service.impl;
+
+
+import com.murk.commonlib.pojo.UserInfo;
+import com.murk.commonlib.utils.JwtUtils;
+import com.murk.commonlib.utils.Result;
+import com.murk.serviceuser.Mapper.UserInfoMapper;
+import com.murk.serviceuser.Service.UserInfoService;
+import com.murk.serviceuser.dto.LoginSuccessVo;
+import com.murk.serviceuser.dto.UserLoginDTO;
+import com.murk.serviceuser.dto.UserRegisterDTO;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+
+import java.time.LocalDateTime;
+
+@Service
+public class UserServiceImpl implements UserInfoService {
+    @Autowired
+     private UserInfoMapper userInfoMapper;
+    @Autowired  //怎么会有这么高级的注解。。密码加密器
+    private BCryptPasswordEncoder passwordEncoder;
+    @Override
+    /*登录Service思路逻辑：
+                      1.接受Controller层的登录用户信息,校验，防止其为空
+                      2.调用mapper层,校验用户名是否存在
+                      3.校验前端的明文密码和数据库中的加密密码是否一致
+                      4.给Controller层返回响应成功或失败结果
+                      5.如果登录成功还要生成token令牌给Controller*/
+    public Result<LoginSuccessVo> login(UserLoginDTO userLoginDTO) {
+        if(userLoginDTO==null|| StringUtils.isEmpty(userLoginDTO.getUsername())
+                ||StringUtils.isEmpty(userLoginDTO.getPassword())){
+            return Result.error("用户名或密码不能为空");
+        }
+        //调用Mapper层，Mapper中的本质是查询用户信息，而Service层要去解释Mapper的查询数据来校验
+        //查询的有username+password，可以将其封装在一个实体类，即user类中（封装性）
+        UserInfo user=  userInfoMapper.selectByUsername(userLoginDTO.getUsername());
+        //强制类型转化为User，不然生成的Token令牌始终就是错的，何意味？
+        if(user==null){
+            return Result.error("用户名不存在，请先注册");
+        }
+        if(!passwordEncoder.matches(userLoginDTO.getPassword(),user.getPassword()))
+        {
+            return Result.error("密码错误");
+        }
+        String token = JwtUtils.generateToken(user.getId(), user.getUsername());
+        // 3. 封装登录成功数据（新增：用LoginSuccessVO封装3个核心字段）
+        LoginSuccessVo loginSuccessVo = new LoginSuccessVo();
+        loginSuccessVo.setToken(token);       // 设置JWT令牌
+        loginSuccessVo.setUserId(String.valueOf(user.getId())); // 设置数据库user表的id
+        loginSuccessVo.setUserName(user.getUsername()); // 设置数据库user表的username
+
+        // 4. 复用原有Result.success(T data)方法，返回VO对象
+        return Result.success(loginSuccessVo);
+    }
+    /*注册思路逻辑：
+                1.获取前端传递的用户信息
+                2.校验用户名不是空
+                3.不是空的前提下对用户名和密码做出限定
+                4.调用Mapper层，如果用户民存在就返回登陆页面，给Controller层返回错误结果
+                5.用户名存在就继续将密码，用户名存入数据库中,调用mapper层(完善注册时间)，给Controller层返回success*/
+    @Override
+    public Result<String> register(UserRegisterDTO userRegisterDTO) {
+        if(userRegisterDTO==null|| StringUtils.isEmpty(userRegisterDTO.getUsername())
+                ||StringUtils.isEmpty(userRegisterDTO.getPassword())){
+            return Result.error("用户名或密码不能为空");
+        }
+        // 2. 入参去空格，避免前后端传参带空格的隐性问题   最麻烦的一集。
+        String username = userRegisterDTO.getUsername().trim();
+        String password = userRegisterDTO.getPassword().trim();
+        if (StringUtils.isEmpty(username) || StringUtils.isEmpty(password)) {
+            return Result.error("用户名或密码不能为空格");
+        }//二次校验没有空格，都怪页面老时500，把我当人机整
+        if(userRegisterDTO.getUsername().length()<3||userRegisterDTO.getUsername().length()>16){
+            return Result.error("用户名长度要在3-16位");
+        }
+        if(userRegisterDTO.getPassword().length()<6||userRegisterDTO.getPassword().length()>15){
+            return Result.error("用户密码要在6-15位");
+        }
+        UserInfo user=  userInfoMapper.selectByUsername(userRegisterDTO.getUsername());
+        if(user!=null){
+            return Result.error("当前用户存在，请登录");
+        }
+        //执行到此处，用户不存在，新建用户对象并封装其用户名和密码，调用mapper层新增一条数据
+        UserInfo newUser=new UserInfo();
+        newUser.setUsername(userRegisterDTO.getUsername());
+        newUser.setPassword(passwordEncoder.encode(userRegisterDTO.getPassword()));//加密密码保存
+        //补充注册时间
+        newUser.setCreateTime(LocalDateTime.now());
+        /*豆包唯一权威的一次，让我用try-catch去调用mapper层，这样可以在出现：数据库连接失败，数据库约束冲突等一系列问题
+        时可以看到异常的提示信息，提醒用户“注册失败。。。。。”*/
+
+        //try-catch的代码是依托屎吗？
+        //又看了一遍还是觉得写的是屎。
+       //喜喜加上了全局异常处理，让代码不再是屎
+        userInfoMapper.insert(newUser);
+        return Result.success();
+    }
+
+
+}

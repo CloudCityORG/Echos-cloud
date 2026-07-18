@@ -45,5 +45,17 @@ https://maven.apache.org/xsd/maven-4.0.0.xsd">
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
+
+        <!-- MyBatis-Plus 连表（公共 POJO 需用到 @Table 注解） -->
+        <dependency>
+            <groupId>com.github.yulichang</groupId>
+            <artifactId>mybatis-plus-join-boot-starter</artifactId>
+        </dependency>
+
+        <!-- OpenFeign：供公共 Feign 接口使用 -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-openfeign</artifactId>
+        </dependency>
     </dependencies>
 </project>

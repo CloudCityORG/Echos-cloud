@@ -1,0 +1,34 @@
+﻿package com.murk.commonlib.dto;
+
+import com.murk.commonlib.dto.RankSong;
+import com.murk.commonlib.dto.RankTagVO;
+import com.murk.commonlib.pojo.RankTags;
+import com.murk.commonlib.pojo.UserTags;
+import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Data
+@Setter
+@Getter
+public class MyRankWithSong {
+    private Integer rankId;
+    private String rankName;
+    private Integer voteCount;
+    //private String songName;
+    private String username;
+    private Integer userId;
+    private Integer loveCount;
+    private LocalDateTime publishTime;//数据库中的datetime对应java类中的localdateTime
+    //date对应LocalDate
+    private List<RankSong> rankSongList;
+
+    private boolean Followed;
+    private RankTagVO rankTagVOList;
+    private List<RankTags> rankTagsList;
+
+    private List<UserTags> userTagList;
+}

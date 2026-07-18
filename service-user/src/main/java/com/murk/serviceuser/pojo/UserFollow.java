@@ -1,0 +1,14 @@
+﻿package com.murk.serviceuser.pojo;
+
+import lombok.Data;
+
+import java.time.LocalDateTime;
+
+@Data
+public class UserFollow {
+    private int UFId;
+    private int userId;
+    private int followId;
+    private LocalDateTime createTime;
+    private int isMutual;
+}
