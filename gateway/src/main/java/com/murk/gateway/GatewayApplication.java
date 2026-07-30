@@ -1,4 +1,4 @@
-﻿package com.murk.gateway;
+package com.murk.gateway;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

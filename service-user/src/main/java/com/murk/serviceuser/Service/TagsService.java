@@ -1,7 +1,7 @@
-﻿package com.murk.serviceuser.Service;
+package com.murk.serviceuser.Service;
 
-import com.murk.servicechart.dto.TagsDTO;
-import com.murk.servicechart.dto.TagsPageQueryDTO;
+import com.murk.commonlib.dto.TagsDTO;
+import com.murk.commonlib.dto.TagsPageQueryDTO;
 import com.murk.commonlib.result.PageResult;
 import org.springframework.stereotype.Service;
 

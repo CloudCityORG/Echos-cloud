@@ -1,4 +1,4 @@
-﻿package com.murk.serviceaudit.pojo;
+package com.murk.serviceaudit.pojo;
 
 import lombok.Data;
 

@@ -1,4 +1,4 @@
-﻿package com.murk.serviceagent.Service;
+package com.murk.serviceagent.Service;
 
 import dev.langchain4j.service.TokenStream;
 

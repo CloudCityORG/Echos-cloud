@@ -10,18 +10,10 @@
         ut.UT_id AS UTId,
         ut.user_id AS userId,
         ut.tag_id AS tagId,
-        ut.use_count,   -- 选取热度字段
-        ut.create_time AS createTime,
-        t.tag_name      -- 选取标签名称用于展示和搜索
+        ut.use_count,
+        ut.create_time AS createTime
         FROM user_tags ut
-        LEFT JOIN tags_dictionary t ON ut.tag_id = t.tag_id
         WHERE ut.user_id = #{userId}
-        <!-- 模糊查找逻辑：如果 tagName 不为空，则匹配标签名 -->
-        <if test="tagName != null and tagName != ''">
-            AND t.tag_name LIKE CONCAT('%', #{tagName}, '%')
-        </if>
-
-        <!-- 排序逻辑：按 user_tags 表中的热度降序排列 -->
         ORDER BY ut.use_count DESC, ut.UT_id DESC
     </select>
 </mapper>

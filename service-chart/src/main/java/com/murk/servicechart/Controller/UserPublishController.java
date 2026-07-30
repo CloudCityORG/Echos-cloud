@@ -1,11 +1,13 @@
-﻿package com.murk.servicechart.Controller;
+package com.murk.servicechart.Controller;
 
 import com.github.pagehelper.PageInfo;
-import com.murk.servicevote.Service.HotRankService;
+import com.murk.commonlib.api.VoteFeignClient;
+import com.murk.commonlib.pojo.Comment;
+import com.murk.commonlib.pojo.Singer;
+import com.murk.commonlib.pojo.Song;
 import com.murk.servicechart.Service.UserPublishService;
-import com.murk.serviceaudit.dto.ApplySongVo;
 import com.murk.servicechart.dto.CommentVo;
-import com.murk.commonlib.dto.MyRankWithSong;
+import com.murk.servicechart.dto.MyRankWithSong;
 import com.murk.servicechart.dto.RankAddRequest;
 import com.murk.commonlib.utils.JwtUtils;
 import com.murk.commonlib.utils.Result;
@@ -15,6 +17,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -31,9 +34,9 @@ public class UserPublishController {
     private static final Logger log = LoggerFactory.getLogger(UserPublishController.class);
     @Resource
     private UserPublishService userPublishService;
+    @Autowired
+    private VoteFeignClient voteFeignClient;
 
-    @Resource
-    private HotRankService hotRankService;
     @GetMapping("/publish")
     @Operation(summary = "发布榜单", description = "发布榜单")
     public String publish(@RequestParam("token") String token, RedirectAttributes redirectAttributes, @RequestParam(value = "category",required = false) Integer category,
@@ -157,10 +160,11 @@ public class UserPublishController {
             }
             // 和热门榜单接口保持同一套投票计分逻辑：
             // 统一走 HotRankService，确保计数、ZSet、排名战报一致
-            boolean result=hotRankService.insertVote(userId,rankId);
+            Result<Boolean> voteResult = voteFeignClient.insertVote(userId,rankId);
+            boolean result = voteResult != null && voteResult.getData() != null && voteResult.getData();
             if(result==true){
                 log.info("投票成功 ");
-                hotRankService.updateHotRank(rankId);
+                voteFeignClient.updateHotRank(rankId);
                 return Result.success("点赞成功，战报正在后台生成...");
 
             }else {

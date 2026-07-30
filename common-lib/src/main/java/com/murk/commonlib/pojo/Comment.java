@@ -1,4 +1,4 @@
-﻿package com.murk.commonlib.pojo;
+package com.murk.commonlib.pojo;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

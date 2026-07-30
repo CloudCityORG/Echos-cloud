@@ -1,4 +1,4 @@
-﻿package com.murk.commonlib.dto;
+package com.murk.commonlib.dto;
 
 import com.murk.commonlib.dto.RankSong;
 import com.murk.commonlib.dto.RankTagVO;

@@ -1,4 +1,4 @@
-﻿package com.murk.commonlib.Exception;
+package com.murk.commonlib.Exception;
 
 import com.murk.commonlib.utils.Result;
 import lombok.extern.slf4j.Slf4j;

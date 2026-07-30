@@ -1,4 +1,4 @@
-﻿package com.murk.servicechart.Controller;
+package com.murk.servicechart.Controller;
 
 import com.github.pagehelper.PageInfo;
 import com.murk.commonlib.pojo.Singer;
@@ -6,7 +6,7 @@ import com.murk.commonlib.pojo.Song;
 import com.murk.servicechart.Service.MyRankService;
 import com.murk.servicechart.dto.CommentVo;
 import com.murk.servicechart.dto.EditRank;
-import com.murk.commonlib.dto.MyRankWithSong;
+import com.murk.servicechart.dto.MyRankWithSong;
 import com.murk.commonlib.pojo.UserInfo;
 import com.murk.commonlib.utils.JwtUtils;
 import com.murk.commonlib.utils.Result;

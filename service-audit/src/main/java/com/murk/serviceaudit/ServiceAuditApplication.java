@@ -1,4 +1,4 @@
-﻿package com.murk.serviceaudit;
+package com.murk.serviceaudit;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

@@ -1,4 +1,4 @@
-﻿package com.murk.servicechart.pojo;
+package com.murk.servicechart.pojo;
 
 import lombok.Data;
 

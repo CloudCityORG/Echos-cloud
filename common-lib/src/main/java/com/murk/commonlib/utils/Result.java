@@ -1,4 +1,4 @@
-﻿package com.murk.commonlib.utils;
+package com.murk.commonlib.utils;
 
 import lombok.Data;
 

@@ -1,4 +1,4 @@
-﻿package com.murk.commonlib.utils;
+package com.murk.commonlib.utils;
 
 /**
  * ThreadLocal 工具类：用来在同一个线程（请求）中存取用户信息

@@ -1,4 +1,4 @@
-﻿package com.murk.servicevote.dto;
+package com.murk.servicevote.dto;
 
 import lombok.Data;
 

@@ -1,4 +1,4 @@
-﻿package com.murk.serviceuser.Mapper;
+package com.murk.serviceuser.Mapper;
 
 import com.murk.commonlib.pojo.UserInfo;
 import org.apache.ibatis.annotations.Mapper;

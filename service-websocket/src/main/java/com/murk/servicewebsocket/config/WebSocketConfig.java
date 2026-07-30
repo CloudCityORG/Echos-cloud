@@ -1,4 +1,4 @@
-﻿package com.murk.servicewebsocket.config;
+package com.murk.servicewebsocket.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

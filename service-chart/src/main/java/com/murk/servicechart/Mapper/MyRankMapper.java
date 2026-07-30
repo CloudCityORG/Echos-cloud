@@ -1,10 +1,10 @@
-﻿package com.murk.servicechart.Mapper;
+package com.murk.servicechart.Mapper;
 
 import com.murk.commonlib.pojo.Comment;
 import com.murk.commonlib.pojo.Singer;
 import com.murk.commonlib.pojo.Song;
 import com.murk.servicechart.dto.CommentVo;
-import com.murk.commonlib.dto.MyRankWithSong;
+import com.murk.servicechart.dto.MyRankWithSong;
 import com.murk.commonlib.dto.PersonalRank;
 import com.murk.commonlib.dto.RankSong;
 import com.murk.commonlib.pojo.UserInfo;
@@ -33,15 +33,10 @@ public interface MyRankMapper {
 
     void insertNewRank(List<RankSong> newSongs);
 
-    List<MyRankWithSong> selectLoveSong(Integer userId, Integer pageSize, Integer offset, Integer pageNum);
-
-    @Select("select count(*) from love_record where user_id=#{userId}")
-    Integer selectloveTotal(Integer userId);
+    List<MyRankWithSong> selectLoveSong(@Param("rankIds") List<Integer> rankIds);
 
     @Delete("delete from personal_rank where rank_id=#{rankId}")
     boolean deleteRank(Integer rankId);
-
-    UserInfo selectByUserId(Integer userId);
 
     List<CommentVo> selectComment(Integer rankId, Integer userId);
 
@@ -55,4 +50,6 @@ public interface MyRankMapper {
 
     @Select("select user_id from personal_rank where rank_id=#{rankId}")
     Integer selectCreatorIdByRankId(Integer rankId);
+
+    List<com.murk.servicechart.dto.MyRankWithSong> getRankByIds(List<Integer> rankIds);
 }

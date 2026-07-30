@@ -1,4 +1,4 @@
-﻿package com.murk.commonlib.utils;
+package com.murk.commonlib.utils;
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.*;

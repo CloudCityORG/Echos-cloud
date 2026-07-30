@@ -1,4 +1,6 @@
-﻿package com.murk.servicevote.Service.impl;
+package com.murk.servicevote.Service.impl;
 
-public class LoveServiceImpl implements LoveServiceImpl {
+import com.murk.servicevote.Service.LoveService;
+
+public class LoveServiceImpl implements LoveService {
 }

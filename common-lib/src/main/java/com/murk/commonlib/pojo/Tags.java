@@ -1,4 +1,4 @@
-﻿package com.murk.commonlib.pojo;
+package com.murk.commonlib.pojo;
 
 import com.github.yulichang.annotation.Table;
 import lombok.*;

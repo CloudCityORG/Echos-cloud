@@ -1,4 +1,4 @@
-﻿package com.murk.servicevote.Service.impl;
+package com.murk.servicevote.Service.impl;
 
 import com.murk.servicevote.Service.LoveCommentService;
 

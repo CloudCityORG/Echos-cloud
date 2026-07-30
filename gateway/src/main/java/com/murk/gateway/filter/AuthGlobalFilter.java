@@ -1,4 +1,4 @@
-﻿package com.murk.gateway.filter;
+package com.murk.gateway.filter;
 
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;

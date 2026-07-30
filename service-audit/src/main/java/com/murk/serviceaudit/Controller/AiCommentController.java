@@ -1,17 +1,10 @@
-﻿package com.murk.serviceaudit.Controller;
+package com.murk.serviceaudit.Controller;
 
 import com.murk.serviceaudit.Service.AiCommentService;
-import com.murk.serviceaudit.dto.AiCommentVo;
 import com.murk.commonlib.dto.MyRankWithSong;
-import com.murk.commonlib.dto.PersonalRank;
-import com.murk.commonlib.dto.RankSong;
-import com.murk.commonlib.dto.RankTags;
 import com.murk.commonlib.utils.Result;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
-
-import static net.sf.jsqlparser.parser.feature.Feature.comment;
 
 @RestController
 @RequestMapping("/AiComment")

@@ -1,6 +1,6 @@
 package com.murk.servicechart.ES;
-import com.murk.commonlib.dto.MyRankWithSong;
 import com.murk.commonlib.dto.RankSong;
+import com.murk.servicechart.dto.MyRankWithSong;
 import com.murk.servicechart.Mapper.UserPublishMapper;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;

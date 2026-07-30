@@ -27,6 +27,8 @@ spring:
       discovery:
         server-addr: localhost:8848
         namespace: a2f1df1d-29d7-4bfe-85f5-7beec09bd563
+  elasticsearch:
+    uris: http://localhost:9200
 server:
   port: 8082
 mybatis-plus:

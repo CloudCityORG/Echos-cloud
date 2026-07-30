@@ -1,4 +1,4 @@
-﻿package com.murk.servicevote.Controller;
+package com.murk.servicevote.Controller;
 
 import com.murk.servicevote.Service.HotRankService;
 import io.swagger.v3.oas.annotations.Operation;

@@ -1,4 +1,4 @@
-﻿package com.murk.servicevote.Service;
+package com.murk.servicevote.Service;
 
 import com.murk.commonlib.dto.CommentVo;
 import com.murk.commonlib.dto.MyRankWithSong;

@@ -1,11 +1,11 @@
-﻿package com.murk.servicechart.Service;
+package com.murk.servicechart.Service;
 
 import com.github.pagehelper.PageInfo;
 import com.murk.commonlib.pojo.Singer;
 import com.murk.commonlib.pojo.Song;
 import com.murk.servicechart.dto.CommentVo;
 import com.murk.servicechart.dto.EditRank;
-import com.murk.commonlib.dto.MyRankWithSong;
+import com.murk.servicechart.dto.MyRankWithSong;
 import com.murk.commonlib.pojo.UserInfo;
 
 import java.util.List;
@@ -32,4 +32,6 @@ public interface MyRankService {
     boolean deleteComment(Integer comId, Integer userId);
 
     boolean update(EditRank dto, Integer rankId);
+
+    List<MyRankWithSong> getRanksByIds(List<Integer> rankIds);
 }

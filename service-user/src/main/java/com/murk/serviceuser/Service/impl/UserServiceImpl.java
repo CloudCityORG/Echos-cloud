@@ -1,6 +1,7 @@
-﻿package com.murk.serviceuser.Service.impl;
+package com.murk.serviceuser.Service.impl;
 
 
+import com.murk.commonlib.dto.UserNameVO;
 import com.murk.commonlib.pojo.UserInfo;
 import com.murk.commonlib.utils.JwtUtils;
 import com.murk.commonlib.utils.Result;
@@ -15,6 +16,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
 
 @Service
 public class UserServiceImpl implements UserInfoService {
@@ -97,6 +100,14 @@ public class UserServiceImpl implements UserInfoService {
        //喜喜加上了全局异常处理，让代码不再是屎
         userInfoMapper.insert(newUser);
         return Result.success();
+    }
+
+    @Override
+    public List<UserNameVO> getNamesByIds(List<Integer> userIds) {
+        if(userIds==null){
+            return Collections.emptyList();
+        }
+        return userInfoMapper.getNamesByIds(userIds);
     }
 
 

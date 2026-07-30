@@ -1,10 +1,20 @@
-﻿package com.murk.servicechart.Service.impl;
+package com.murk.servicechart.Service.impl;
 
 import com.github.pagehelper.PageInfo;
+import com.murk.commonlib.api.AuditFeignClient;
+import com.murk.commonlib.api.UserFeginClient;
+import com.murk.commonlib.api.VoteFeignClient;
+import com.murk.commonlib.dto.CommentLikeStat;
+import com.murk.commonlib.dto.UserNameVO;
+import com.murk.commonlib.dto.VoteStats;
+import com.murk.commonlib.pojo.Comment;
+import com.murk.commonlib.pojo.Singer;
+import com.murk.commonlib.pojo.Song;
+import com.murk.commonlib.utils.Result;
 import com.murk.servicechart.Mapper.UserPublishMapper;
 import com.murk.servicechart.Service.UserPublishService;
 import com.murk.servicechart.dto.CommentVo;
-import com.murk.commonlib.dto.MyRankWithSong;
+import com.murk.servicechart.dto.MyRankWithSong;
 import com.murk.servicechart.dto.RankAddRequest;
 import com.murk.commonlib.dto.PersonalRank;
 import com.murk.commonlib.dto.RankSong;
@@ -18,43 +28,48 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Service
-
 public class UserPublishServiceImpl implements UserPublishService {
     private static final Logger log = LoggerFactory.getLogger(UserPublishServiceImpl.class);
     @Autowired
     private UserPublishMapper userPublishMapper;
     @Autowired
-    StringRedisTemplate stringRedisTemplate;
+    private StringRedisTemplate stringRedisTemplate;
+    @Autowired
+    private VoteFeignClient voteFeignClient;
+    @Autowired
+    private UserFeginClient userFeginClient;
+    @Autowired
+    private AuditFeignClient auditFeignClient;
 
     private static final String Love_Key="love:user:%d:rank:%d";
     private static final String Vote_Key="vote:user:%d:rank:%d";
 
     @Override
-    @Transactional(rollbackFor = Exception.class,propagation = Propagation.REQUIRED)//事务注解:主表和子表的Service层操作必须同时成功，否则就是失败
+    @Transactional(rollbackFor = Exception.class,propagation = Propagation.REQUIRED)
     public Integer insertRank(Integer categoryId, Integer userId, RankAddRequest rankAddRequestDto) {
-       //？依旧难想，将Dto类转化为对应数据库的实体类
-        //先创建一个pojo对应的对象，再将前端dto的对应值传进去，最后调用Mapper层
         PersonalRank personalRank = new PersonalRank();
         personalRank.setCategoryId(categoryId);
         personalRank.setUserId(userId);
-        //细心豆包，数据库里面默认target——id为空，所以当它真的为空，就设置其值为0
         personalRank.setTargetId(rankAddRequestDto.getTargetId() == null ? 0 : rankAddRequestDto.getTargetId());
         personalRank.setRankName(rankAddRequestDto.getRankName());
         userPublishMapper.insertRank(personalRank);
-        //主表和子表的外键关联要拿出来（666）
         Integer rankId = personalRank.getRankId();
-        System.out.println("获取的rankId：" + rankId);
         if (rankId == null) {
-            System.out.println("rankId为null，直接返回失败"); // 新增：打印跳过逻辑
+            System.out.println("rankId为null，直接返回失败");
             return null;
         }
 
-        List<RankSong> ranksongList=new ArrayList<RankSong>();//用集合接受前端榜单数据，因为歌曲和排名有很多，一个用户还可能有多个榜单
-        //豆包大人教我写最难写的lamda？？表达式
+        List<RankSong> ranksongList=new ArrayList<RankSong>();
         rankAddRequestDto.getSongItems().forEach(item->{
             RankSong rankSong=new RankSong();
             rankSong.setRankId(rankId);
@@ -65,36 +80,35 @@ public class UserPublishServiceImpl implements UserPublishService {
         int insertCount = userPublishMapper.sixInsert(ranksongList);
         if (insertCount != ranksongList.size()) {
             System.out.println("子表插入行数与预期不符，返回失败");
-            return null; // 触发事务回滚
+            return null;
         }
-        return  rankId;
-        }
+        return rankId;
+    }
 
     @Override
     public List<Singer> selectSinger(Integer categoryId) {
-        List<Singer> singers=userPublishMapper.selectSinger(categoryId);
-        return singers;
+        return userPublishMapper.selectSinger(categoryId);
     }
 
     @Override
     public List<Song> selectSong(Integer singerId) {
-        List<Song> songs=userPublishMapper.selectSong(singerId);
-        return songs;
+        return userPublishMapper.selectSong(singerId);
     }
 
     @Override
     public PageInfo<MyRankWithSong> selectPublishRank(Integer category, Integer pageNum, Integer pageSize, Integer offset) {
-
         Integer userId = ThreadLocalUtil.get();
 
-        List<MyRankWithSong> ranks=userPublishMapper.selectPublishRank(category,pageSize,offset);
+        List<MyRankWithSong> ranks = userPublishMapper.selectPublishRank(category, pageSize, offset);
+        fillUsernames(ranks);
+        fillVoteStats(ranks);
         ranks.forEach(rank -> {
-            rank.setFollowed(userPublishMapper.shifoufriend(userId, rank.getUsername())!=0);
+            Result<Boolean> followResult = userFeginClient.isFollowed(userId, rank.getUserId());
+            rank.setFollowed(followResult != null && followResult.getData() != null && followResult.getData());
         });
-        PageInfo<MyRankWithSong> pageInfo=new PageInfo();
-        Integer total=userPublishMapper.selectTotal(category);
-        Integer pages=(total+pageSize-1)/pageSize;
-        System.out.println("所有榜单："+ranks.size());
+        PageInfo<MyRankWithSong> pageInfo = new PageInfo<>();
+        Integer total = userPublishMapper.selectTotal(category);
+        Integer pages = (total + pageSize - 1) / pageSize;
         pageInfo.setList(ranks);
         pageInfo.setPageNum(pageNum);
         pageInfo.setPageSize(pageSize);
@@ -104,9 +118,8 @@ public class UserPublishServiceImpl implements UserPublishService {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class) // 明确回滚所有异常
+    @Transactional(rollbackFor = Exception.class)
     public boolean insertVote(Integer userId, Integer rankId) {
-        // 1. 校验基础参数（避免空指针）
         if (userId == null || rankId == null) {
             log.error("【点赞操作】参数为空，userId={}, rankId={}", userId, rankId);
             return false;
@@ -114,46 +127,34 @@ public class UserPublishServiceImpl implements UserPublishService {
         String voteKey = String.format(Vote_Key, userId, rankId);
         log.info("【点赞操作】开始，userId={}, rankId={}, RedisKey={}", userId, rankId, voteKey);
 
-        // 2. 核心：用Redis的setIfAbsent原子操作判断是否已投票
-        // setIfAbsent = 只有key不存在时才设置成功，返回true；已存在则返回false
         Boolean isFirstVote = stringRedisTemplate.opsForValue().setIfAbsent(voteKey, "1", 24, TimeUnit.HOURS);
 
-        //  分支1：已投票（需要取消点赞）
         if (Boolean.FALSE.equals(isFirstVote)) {
             log.info("【取消点赞】Redis已存在记录，开始删除数据库+Redis记录");
-            // 第一步：先删数据库（保证数据一致性，删库成功再删Redis）
-            int deleteResult = userPublishMapper.deleteVote(rankId, userId);
-            if (deleteResult <= 0) {
-                log.error("【取消点赞】数据库删除失败，userId={}, rankId={}", userId, rankId);
-                return false; // 数据库没删成，直接返回失败
+            Result<Boolean> deleteResult = voteFeignClient.deleteVote(userId, rankId);
+            if (deleteResult.getData() == null || !deleteResult.getData()) {
+                log.error("【取消点赞】Feign删除失败，userId={}, rankId={}", userId, rankId);
+                return false;
             }
-            log.info("【取消点赞】数据库记录已删除，影响行数：{}", deleteResult);
-
-            // 第二步：删Redis（重试机制保留）
             boolean deleteSuccess = stringRedisTemplate.delete(voteKey);
             if (!deleteSuccess) {
                 log.warn("【取消点赞】第一次删除Redis Key失败，重试一次！Key={}", voteKey);
                 deleteSuccess = stringRedisTemplate.delete(voteKey);
             }
-            log.info("【取消点赞】Redis Key删除结果：{}，Key={}", deleteSuccess, voteKey);
-
-            return deleteSuccess; // 最终返回Redis删除结果（保证缓存和数据库一致）
+            return deleteSuccess;
         }
 
-        // 分支2：未投票（需要新增点赞）
-        // 先校验榜单是否存在
         PersonalRank v = userPublishMapper.selectRankById(rankId);
         if (v == null) {
             log.error("【点赞操作】榜单不存在，rankId={}", rankId);
-            stringRedisTemplate.delete(voteKey); // 删掉刚才原子操作的占位key
+            stringRedisTemplate.delete(voteKey);
             return false;
         }
 
-        // 插入数据库
-        int rows = userPublishMapper.insertVote(rankId, userId);
-        if (rows <= 0) {
-            log.error("【点赞操作】数据库插入失败，userId={}, rankId={}", userId, rankId);
-            stringRedisTemplate.delete(voteKey); // 数据库失败，删Redis占位key
+        Result<Boolean> result = voteFeignClient.insertVote(userId, rankId);
+        if (result.getData() == null || !result.getData()) {
+            log.error("【点赞操作】Feign插入失败，userId={}, rankId={}", userId, rankId);
+            stringRedisTemplate.delete(voteKey);
             return false;
         }
 
@@ -162,101 +163,84 @@ public class UserPublishServiceImpl implements UserPublishService {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class) // 明确回滚所有异常
+    @Transactional(rollbackFor = Exception.class)
     public boolean insertLove(Integer userId, Integer rankId) {
-        // 1. 基础参数校验（避免空指针导致数据不一致）
         if (userId == null || rankId == null) {
             log.error("【收藏操作】参数为空，userId={}, rankId={}", userId, rankId);
             return false;
         }
 
-        // 拼接Redis的key值
         String loveKey = String.format(Love_Key, userId, rankId);
         log.info("【收藏操作】开始，userId={}, rankId={}, RedisKey={}", userId, rankId, loveKey);
 
-        // 2. 先同步数据库收藏状态到Redis（解决缓存和数据库不一致问题）
         syncLoveStatus(userId, rankId, loveKey);
 
-        // 3. 核心：用Redis的setIfAbsent原子操作判断是否已收藏
         Boolean isFirstLove = stringRedisTemplate.opsForValue().setIfAbsent(loveKey, "1", 24, TimeUnit.HOURS);
-        // 防御性判断：Redis连接失败时直接返回
         if (isFirstLove == null) {
             log.error("【收藏操作】Redis连接失败，无法判断收藏状态");
             return false;
         }
 
-        // 分支1：已收藏（执行取消收藏）
         if (Boolean.FALSE.equals(isFirstLove)) {
             log.info("【取消收藏】Redis已存在记录，开始删除数据库+Redis记录");
             try {
-                // 调用Mapper删除（用@Param注解后参数顺序不再敏感，优先保证userId/rankId传对）
-                int deleteResult = userPublishMapper.deleteLove(userId, rankId);
-                log.info("【取消收藏】数据库删除影响行数：{}", deleteResult);
+                Result<Boolean> deleteResult = voteFeignClient.deleteLove(userId, rankId);
+                boolean success = deleteResult.getData() != null && deleteResult.getData();
+                log.info("【取消收藏】Feign删除结果：{}", success);
 
-                // 数据库删除成功才删Redis，失败则删除Redis并抛异常
-                if (deleteResult > 0) {
+                if (success) {
                     boolean deleteSuccess = stringRedisTemplate.delete(loveKey);
                     if (!deleteSuccess) {
                         log.warn("【取消收藏】第一次删除Redis Key失败，重试一次！Key={}", loveKey);
                         deleteSuccess = stringRedisTemplate.delete(loveKey);
                     }
-                    log.info("【取消收藏】Redis Key删除结果：{}，Key={}", deleteSuccess, loveKey);
                     return deleteSuccess;
                 } else {
-                    log.error("【取消收藏】数据库删除失败，userId={}, rankId={}", userId, rankId);
-                    // 数据库无记录，强制删除Redis避免缓存残留
+                    log.error("【取消收藏】Feign删除失败，userId={}, rankId={}", userId, rankId);
                     stringRedisTemplate.delete(loveKey);
                     throw new RuntimeException("取消收藏：数据库无对应记录");
                 }
             } catch (Exception e) {
                 log.error("【取消收藏】执行失败", e);
-                stringRedisTemplate.delete(loveKey); // 异常时删除Redis
-                throw e; // 抛异常触发事务回滚？？？
+                stringRedisTemplate.delete(loveKey);
+                throw e;
             }
         }
 
-        // 分支2：未收藏（执行新增收藏）
         try {
-            // 校验榜单是否存在
             PersonalRank l = userPublishMapper.selectRankById(rankId);
             if (l == null) {
                 log.error("【收藏操作】榜单不存在，rankId={}", rankId);
-                stringRedisTemplate.delete(loveKey); // 删除Redis占位key
+                stringRedisTemplate.delete(loveKey);
                 return false;
             }
 
-            // 插入数据库（关键：确保userId/rankId参数顺序和Mapper的@Param匹配）
-            int row1 = userPublishMapper.insertLove(userId, rankId);
-            log.info("【收藏操作】数据库插入影响行数：{}", row1);
+            Result<Boolean> result = voteFeignClient.insertLove(userId, rankId);
+            boolean success = result.getData() != null && result.getData();
+            log.info("【收藏操作】Feign插入结果：{}", success);
 
-            // 数据库插入成功才保留Redis记录，失败则回滚
-            if (row1 > 0) {
+            if (success) {
                 log.info("【收藏成功】Redis已记录，userId={}, rankId={}", userId, rankId);
                 return true;
             } else {
-                log.error("【收藏失败】数据库插入无影响行数，userId={}, rankId={}", userId, rankId);
-                stringRedisTemplate.delete(loveKey); // 删除Redis占位key
+                log.error("【收藏失败】Feign插入失败，userId={}, rankId={}", userId, rankId);
+                stringRedisTemplate.delete(loveKey);
                 throw new RuntimeException("收藏失败：数据库插入失败");
             }
         } catch (Exception e) {
             log.error("【收藏操作】执行失败", e);
-            stringRedisTemplate.delete(loveKey); // 异常时删除Redis
-            throw e; // 抛异常触发事务回滚
+            stringRedisTemplate.delete(loveKey);
+            throw e;
         }
     }
-    //豆包更新之后变权威了
-    //下方方法目的：刷新页面之后不会让统统一用户能重复投票，使用redis达到记录用户投票状态的目的
-    // 可以在页面加载获取榜单信息时，或者在投票前调用这个方法
 
     private void syncLoveStatus(Integer userId, Integer rankId, String loveKey) {
-        // 先在Mapper中新增countLove方法（和点赞的countVote逻辑一致）
-        Integer count = userPublishMapper.countLove(userId, rankId);
-        if (count > 0 && !stringRedisTemplate.hasKey(loveKey)) {
-            // 数据库有收藏记录，Redis无 → 同步到Redis
+        Result<Boolean> result = voteFeignClient.hasLove(userId, rankId);
+        boolean hasLove = result.getData() != null && result.getData();
+        if (hasLove && !stringRedisTemplate.hasKey(loveKey)) {
             stringRedisTemplate.opsForValue().set(loveKey, "1");
             log.info("【收藏缓存同步】数据库有记录，Redis同步成功，userId={}, rankId={}", userId, rankId);
-        } else if (count == 0 && stringRedisTemplate.hasKey(loveKey)) {
-            // 数据库无收藏记录，Redis有 → 删除Redis
+        } else if (!hasLove && stringRedisTemplate.hasKey(loveKey)) {
             stringRedisTemplate.delete(loveKey);
             log.info("【收藏缓存同步】数据库无记录，Redis删除成功，userId={}, rankId={}", userId, rankId);
         }
@@ -265,15 +249,17 @@ public class UserPublishServiceImpl implements UserPublishService {
     @Override
     public PageInfo<MyRankWithSong> selectSearch(Integer category, Integer pageNum,
                                                  Integer offset, Integer pageSize,String keyword) {
-        if(keyword!=null){
-            keyword=keyword.trim();
-        }else{
-            keyword=null;
+        if (keyword != null) {
+            keyword = keyword.trim();
+        } else {
+            keyword = null;
         }
-        List<MyRankWithSong> list=userPublishMapper.selectSearch(category,pageNum,offset,pageSize,keyword);
-        PageInfo<MyRankWithSong> searchRank=new PageInfo();
-        Integer total=userPublishMapper.selectSearchTotal(category,keyword);
-        Integer pages=(total+pageSize-1)/pageSize;
+        List<MyRankWithSong> list = userPublishMapper.selectSearch(category, pageNum, offset, pageSize, keyword);
+        fillUsernames(list);
+        fillVoteStats(list);
+        PageInfo<MyRankWithSong> searchRank = new PageInfo<>();
+        Integer total = userPublishMapper.selectSearchTotal(category, keyword);
+        Integer pages = (total + pageSize - 1) / pageSize;
         searchRank.setList(list);
         searchRank.setPageNum(pageNum);
         searchRank.setPageSize(pageSize);
@@ -284,80 +270,76 @@ public class UserPublishServiceImpl implements UserPublishService {
 
     @Override
     public Comment insertComment(Integer rankId, Integer userId, String content, Integer parentId) {
-        Comment comment=new Comment();
+        Comment comment = new Comment();
         comment.setRankId(rankId);
         comment.setUserId(userId);
         comment.setComContent(content);
         comment.setParentId(parentId);
-        userPublishMapper.insertComment(rankId,userId,content,parentId);
-        return  comment;
+        userPublishMapper.insertComment(rankId, userId, content, parentId);
+        return comment;
     }
 
     @Override
     public List<CommentVo> selectComment(Integer rankId, Integer userId) {
-       List<CommentVo> list=userPublishMapper.selectComment(rankId,userId);
-       System.out.println("查询出的评论数："+list.size());
-       return list;
+        List<CommentVo> list = userPublishMapper.selectComment(rankId, userId);
+        fillCommentUsernames(list);
+        fillCommentLikes(list, userId);
+        System.out.println("查询出的评论数：" + list.size());
+        return list;
     }
 
     @Override
     @Transactional
     public boolean deleteComment(Integer comId,Integer userId) {
-        Comment comment=userPublishMapper.selectCommentById(comId);
-        if(comment==null){
+        Comment comment = userPublishMapper.selectCommentById(comId);
+        if (comment == null) {
             return false;
         }
-        if(comment.getUserId()!=userId){
+        if (comment.getUserId() != userId) {
             throw new RuntimeException("只能删除自己的评论");
         }
-        int result= userPublishMapper.updateComment(comId,1);
-        return result>0;
+        int result = userPublishMapper.updateComment(comId, 1);
+        return result > 0;
     }
 
     @Override
     @Transactional
     public boolean insertLike(Integer userId,Integer comId) {
-       Comment comment=userPublishMapper.selectCommentById(comId);
-       if(comment==null||comment.getIdDelete()==1){
-           return false;
-       }
-       int result=userPublishMapper.insertLike(userId,comId);
-       return result>0;
+        Comment comment = userPublishMapper.selectCommentById(comId);
+        if (comment == null || comment.getIdDelete() == 1) {
+            return false;
+        }
+        Result<Boolean> result = voteFeignClient.insertLike(userId, comId);
+        return result.getData() != null && result.getData();
     }
 
     @Override
     @Transactional
     public boolean deleteLike(Integer comId, Integer userId) {
-      Comment comment=userPublishMapper.selectCommentById(comId);
-      if(comment==null||comment.getIdDelete()==1){
-          return false;
-      }
-      int result=userPublishMapper.deleteLike(comId,userId);
-      return result>0;
+        Comment comment = userPublishMapper.selectCommentById(comId);
+        if (comment == null || comment.getIdDelete() == 1) {
+            return false;
+        }
+        Result<Boolean> result = voteFeignClient.deleteLike(userId, comId);
+        return result.getData() != null && result.getData();
     }
 
     @Override
     @Transactional
     public boolean deleteVote(Integer rankId, Integer userId) {
-        // 原有逻辑
         PersonalRank personalRank = userPublishMapper.selectRankById(rankId);
         if (personalRank == null) {
-            // 新增日志：打印榜单不存在的提示
             log.warn("【取消点赞】榜单不存在！rankId={}, userId={}", rankId, userId);
             return false;
         }
 
-        // 新增日志：打印要删除的条件
         log.info("【取消点赞】准备删除点赞记录：rankId={}, userId={}", rankId, userId);
-        int result = userPublishMapper.deleteVote(rankId, userId);
-
-        // 新增日志：打印删除结果（核心！看删了多少行）
-        log.info("【取消点赞】删除操作完成，影响行数：{}", result);
-
-        return result > 0;
+        Result<Boolean> result = voteFeignClient.deleteVote(userId, rankId);
+        boolean ok = result.getData() != null && result.getData();
+        log.info("【取消点赞】Feign删除结果：{}", ok);
+        return ok;
     }
 
-    // 你的deleteLove方法（同理加日志）
     @Override
     @Transactional
     public boolean deleteLove(Integer rankId, Integer userId) {
@@ -368,21 +350,118 @@ public class UserPublishServiceImpl implements UserPublishService {
         }
 
         log.info("【取消收藏】准备删除收藏记录：rankId={}, userId={}", rankId, userId);
-        int result = userPublishMapper.deleteLove(rankId, userId);
-        log.info("【取消收藏】删除操作完成，影响行数：{}", result);
-
-        return result > 0;
+        Result<Boolean> result = voteFeignClient.deleteLove(userId, rankId);
+        boolean ok = result.getData() != null && result.getData();
+        log.info("【取消收藏】Feign删除结果：{}", ok);
+        return ok;
     }
 
     @Override
     public boolean insertApply(String singerName, String songName) {
-        if(singerName==null||songName==null){
+        if (singerName == null || songName == null) {
             return false;
-        }else{
-            userPublishMapper.insertApply(singerName,songName);
-            return true;
+        }
+        auditFeignClient.insertSongDemand(songName, singerName);
+        return true;
+    }
+
+    private void fillVoteStats(List<MyRankWithSong> ranks) {
+        if (ranks == null || ranks.isEmpty()) {
+            return;
+        }
+        String rankIds = ranks.stream()
+                .map(MyRankWithSong::getRankId)
+                .filter(Objects::nonNull)
+                .map(String::valueOf)
+                .collect(Collectors.joining(","));
+        if (rankIds.isEmpty()) {
+            return;
+        }
+        Result<List<VoteStats>> result = voteFeignClient.getVoteStats(rankIds);
+        if (result.getData() == null) {
+            return;
+        }
+        Map<Integer, VoteStats> statsMap = result.getData().stream()
+                .collect(Collectors.toMap(VoteStats::getRankId, s -> s, (a, b) -> a));
+        ranks.forEach(rank -> {
+            VoteStats stats = statsMap.get(rank.getRankId());
+            if (stats != null) {
+                rank.setVoteCount(stats.getVoteCount());
+                rank.setLoveCount(stats.getLoveCount());
+            }
+        });
+    }
+
+    private void fillCommentLikes(List<CommentVo> comments, Integer userId) {
+        if (comments == null || comments.isEmpty()) {
+            return;
+        }
+        String comIds = comments.stream()
+                .map(CommentVo::getComId)
+                .filter(Objects::nonNull)
+                .map(String::valueOf)
+                .collect(Collectors.joining(","));
+        if (!comIds.isEmpty()) {
+            Result<List<CommentLikeStat>> likeResult = voteFeignClient.getCommentLikeStats(comIds);
+            if (likeResult.getData() != null) {
+                Map<Integer, Integer> likeMap = likeResult.getData().stream()
+                        .collect(Collectors.toMap(CommentLikeStat::getComId, CommentLikeStat::getLikeCount, (a, b) -> a));
+                comments.forEach(c -> c.setLikeCount(likeMap.getOrDefault(c.getComId(), 0)));
+            }
+        }
+        if (userId != null) {
+            for (CommentVo c : comments) {
+                Result<Boolean> result = voteFeignClient.hasLike(userId, c.getComId());
+                c.setIsLiked((result.getData() != null && result.getData()) ? 1 : 0);
+            }
         }
     }
 
+    private void fillUsernames(List<MyRankWithSong> ranks) {
+        if (ranks == null || ranks.isEmpty()) {
+            return;
+        }
+        List<Integer> userIds = ranks.stream()
+                .map(MyRankWithSong::getUserId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+        if (userIds.isEmpty()) {
+            return;
+        }
+        Map<Integer, String> usernameMap = batchGetUsernames(userIds);
+        ranks.forEach(rank -> rank.setUsername(usernameMap.get(rank.getUserId())));
+    }
 
+    private void fillCommentUsernames(List<CommentVo> comments) {
+        if (comments == null || comments.isEmpty()) {
+            return;
+        }
+        Set<Integer> userIdSet = new HashSet<>();
+        for (CommentVo c : comments) {
+            if (c.getUserId() != null) {
+                userIdSet.add(c.getUserId());
+            }
+            if (c.getParentUserId() != null) {
+                userIdSet.add(c.getParentUserId());
+            }
+        }
+        if (userIdSet.isEmpty()) {
+            return;
+        }
+        Map<Integer, String> usernameMap = batchGetUsernames(new ArrayList<>(userIdSet));
+        for (CommentVo c : comments) {
+            c.setUsername(usernameMap.get(c.getUserId()));
+            c.setParentUsername(usernameMap.get(c.getParentUserId()));
+        }
+    }
+
+    private Map<Integer, String> batchGetUsernames(List<Integer> userIds) {
+        Result<List<UserNameVO>> result = userFeginClient.getUserByIds(userIds);
+        if (result == null || result.getData() == null) {
+            return Collections.emptyMap();
+        }
+        return result.getData().stream()
+                .collect(Collectors.toMap(UserNameVO::getUserId, UserNameVO::getUserName, (a, b) -> a));
+    }
 }

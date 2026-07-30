@@ -1,4 +1,4 @@
-﻿package com.murk.servicewebsocket.config;
+package com.murk.servicewebsocket.config;
 
 import jakarta.websocket.*;
 import jakarta.websocket.server.PathParam; // 1. 导入 PathParam

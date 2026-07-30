@@ -1,4 +1,4 @@
-﻿package com.murk.serviceagent.Service.impl;
+package com.murk.serviceagent.Service.impl;
 
 import com.murk.serviceagent.Mapper.UserInterestVetorMapper;
 import com.murk.serviceagent.Service.UserInterestVetorService;

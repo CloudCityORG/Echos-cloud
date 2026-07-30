@@ -1,4 +1,4 @@
-﻿package com.murk.servicevote.pojo;
+package com.murk.servicevote.pojo;
 
 import lombok.Data;
 

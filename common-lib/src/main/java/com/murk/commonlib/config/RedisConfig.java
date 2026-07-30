@@ -1,4 +1,4 @@
-﻿package com.murk.commonlib.config;
+package com.murk.commonlib.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

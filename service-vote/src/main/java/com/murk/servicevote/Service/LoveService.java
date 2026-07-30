@@ -1,4 +1,4 @@
-﻿package com.murk.servicevote.Service;
+package com.murk.servicevote.Service;
 
 public interface LoveService {
 }

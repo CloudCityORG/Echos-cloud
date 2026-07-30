@@ -1,4 +1,4 @@
-﻿package com.murk.serviceagent.config;
+package com.murk.serviceagent.config;
 
 import dev.langchain4j.memory.chat.ChatMemoryProvider;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;

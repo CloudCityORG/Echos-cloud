@@ -1,4 +1,4 @@
-﻿package com.murk.serviceagent.Mapper;
+package com.murk.serviceagent.Mapper;
 
 import com.murk.serviceagent.pojo.UserBehavior;
 import org.apache.ibatis.annotations.Mapper;

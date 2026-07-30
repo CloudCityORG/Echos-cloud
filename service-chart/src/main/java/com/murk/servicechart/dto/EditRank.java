@@ -1,4 +1,4 @@
-﻿package com.murk.servicechart.dto;
+package com.murk.servicechart.dto;
 
 import lombok.Data;
 

@@ -44,6 +44,7 @@
         <mybatis-plus-join.version>1.5.6</mybatis-plus-join.version>
         <langchain4j.version>0.31.0</langchain4j.version>
         <jaudiotagger.version>3.0.1</jaudiotagger.version>
+        <elasticsearch.version>7.17.0</elasticsearch.version>
     </properties>
 
     <dependencyManagement>
@@ -188,7 +189,7 @@
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
-                            <version>1.18.34</version>
+                            <version>${lombok.version}</version>
                         </path>
                     </annotationProcessorPaths>
                 </configuration>

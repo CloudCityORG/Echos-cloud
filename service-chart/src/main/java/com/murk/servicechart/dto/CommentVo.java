@@ -1,4 +1,4 @@
-﻿package com.murk.servicechart.dto;
+package com.murk.servicechart.dto;
 
 import lombok.Data;
 
@@ -13,6 +13,7 @@ public class CommentVo {
     private String username;
     private LocalDateTime comTime;
     private Integer parentId;
+    private Integer parentUserId;
     private Integer likeCount;
     private Integer isLiked;
     private String parentUsername;

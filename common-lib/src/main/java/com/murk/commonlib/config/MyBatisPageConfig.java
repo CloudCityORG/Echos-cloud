@@ -1,4 +1,4 @@
-﻿package com.murk.commonlib.config;
+package com.murk.commonlib.config;
 
 import com.github.pagehelper.PageInterceptor;
 import org.springframework.context.annotation.Bean;

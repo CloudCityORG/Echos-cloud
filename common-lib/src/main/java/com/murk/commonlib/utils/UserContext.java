@@ -1,4 +1,4 @@
-﻿package com.murk.commonlib.utils;
+package com.murk.commonlib.utils;
 public class UserContext {
     // 字节面试必考：ThreadLocal 就像一个线程内部的保险柜
     private static final ThreadLocal<Integer> userHolder = new ThreadLocal<>();

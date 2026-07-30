@@ -1,13 +1,13 @@
-﻿package com.murk.servicechart.Mapper;
+package com.murk.servicechart.Mapper;
 
 import com.murk.commonlib.pojo.Comment;
 import com.murk.commonlib.pojo.Singer;
 import com.murk.commonlib.pojo.Song;
 import com.murk.servicechart.dto.CommentVo;
-import com.murk.commonlib.dto.MyRankWithSong;
+import com.murk.servicechart.dto.MyRankWithSong;
 import com.murk.commonlib.dto.PersonalRank;
 import com.murk.commonlib.dto.RankSong;
-import com.murk.servicevote.pojo.VoteRecord;
+import lombok.With;
 import org.apache.ibatis.annotations.*;
 
 import java.util.List;
@@ -15,7 +15,6 @@ import java.util.List;
 @Mapper
 public interface UserPublishMapper {
     int insertRank(PersonalRank personalRank);
-    //豆包又权威了一回，用返回插入的行数，如果插入的行数大于0，则代表插入成功，Service对应boolean为true
     int sixInsert(@Param("list") List<RankSong> ranksongList);
 
     List<Singer> selectSinger(Integer categoryId);
@@ -28,13 +27,11 @@ public interface UserPublishMapper {
     @Select("select count(*) from personal_rank where category_id=#{category}")
     Integer selectTotal(@Param("category") Integer category);
 
-   // int checkip(String ip, Integer rankId);
-    //int checkLoveip(String ip, Integer rankId);
-
     List<MyRankWithSong> selectSearch(Integer category, Integer pageNum, Integer offset, Integer pageSize, String keyword);
 
-
     Integer selectSearchTotal(Integer category, String keyword);
+
+    List<MyRankWithSong> searchRanksByUser(@Param("keyword") String keyword, @Param("userId") Integer userId);
 
     @Update("update personal_rank set vote_count=#{rows} where rank_id=#{rankId}")
     int updateVoteCount(@Param("rankId") Integer rankId,@Param("rows") int rows);
@@ -46,38 +43,17 @@ public interface UserPublishMapper {
 
     List<CommentVo> selectComment(@Param("rankId") Integer rankId,@Param("userId") Integer userId);
 
-    Integer insertLike(Integer userId,Integer comId);
-
     Comment selectCommentById(Integer comId);
 
     @Update("update comment set id_delete=#{idDelete}  where com_id=#{comId}")
     int updateComment(Integer comId, int idDelete);
 
-    @Delete("delete from like_comment where com_id=#{comId} and user_id=#{userId}")
-    int deleteLike(Integer comId, Integer userId);
-
     @Select("select * from personal_rank where rank_id=#{rankId} ")
     PersonalRank selectRankById(Integer rankId);
 
-    int insertVote(@Param("rankId") Integer rankId,@Param("userId") Integer userId);
+    @Select("select * from rank_song")
+    List<RankSong> selectES();
 
-    int insertLove(@Param("userId") Integer userId,@Param("rankId") Integer rankId);
-
-    @Delete("delete from vote_record where rank_id=#{rankId} and user_id=#{userId}")
-    int deleteVote(@Param("rankId") Integer rankId,@Param("userId") Integer userId);
-
-    @Delete("delete from love_record where   user_id=#{userId} and rank_id=#{rankId};")
-    int deleteLove(@Param("userId") Integer userId, @Param("rankId") Integer rankId);
-
-    @Select("select count(*) from vote_record where user_id=#{userId} and rank_id=#{rankId}")
-    VoteRecord countVote(@Param("rankId") Integer rankId,@Param("userId") Integer userId);
-
-    @Select("select count(*) from love_record where user_id=#{userId} and rank_id=#{rankId}")
-    int countLove(Integer rankId, Integer userId);
-
-    void insertApply(String singerName, String songName);
-
-    @Select("select count(*) from user_follow  where user_id=#{userId} and follow_id=(select user_id from user where username=#{username})")
-    Integer shifoufriend(@Param("userId") Integer userId,@Param("username") String username);
-    //@Param("list")注解，专门为Maybatis批量插入的需求的List集合起一个别名
+    @Select("select rank_id from personal_rank")
+    List<Integer> selectAllRankIds();
 }

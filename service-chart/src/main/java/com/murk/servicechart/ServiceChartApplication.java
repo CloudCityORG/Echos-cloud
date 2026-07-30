@@ -1,4 +1,4 @@
-﻿package com.murk.servicechart;
+package com.murk.servicechart;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

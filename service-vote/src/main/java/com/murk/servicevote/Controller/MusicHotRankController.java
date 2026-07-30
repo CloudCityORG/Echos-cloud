@@ -1,4 +1,4 @@
-﻿package com.murk.servicevote.Controller;
+package com.murk.servicevote.Controller;
 
 import com.murk.commonlib.dto.BattleReport;
 import com.murk.commonlib.utils.JwtUtils;
@@ -6,8 +6,6 @@ import com.murk.commonlib.utils.Result;
 import com.murk.commonlib.dto.CommentVo;
 import com.murk.commonlib.dto.MyRankWithSong;
 import com.murk.servicevote.Service.HotRankService;
-import com.murk.servicevote.Service.impl.HotRankServiceImpl;
-import com.murk.servicewebsocket.config.NativeWebSocketServer;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;

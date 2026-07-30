@@ -1,9 +1,9 @@
-﻿package com.murk.serviceagent.Service.impl;
+package com.murk.serviceagent.Service.impl;
 
+import com.murk.commonlib.api.ChartFeignClient;
 import com.murk.commonlib.utils.Result;
 import com.murk.commonlib.utils.UserContext;
 import com.murk.serviceagent.Fegin.HotRankFeignClient;
-import com.murk.serviceagent.Mapper.MusicChartMapper;
 
 import com.murk.serviceagent.Service.MusicChartService;
 import com.murk.serviceagent.Service.UserInterestVetorService;
@@ -23,20 +23,21 @@ import java.util.Set;
 @Service
 public class MusicChartServiceImpl implements MusicChartService {
     @Autowired
-    private MusicChartMapper musicChartMapper;
-    @Autowired
     private StringRedisTemplate stringRedisTemplate;
-@Autowired
-private HotRankFeignClient hotRankFeignClient;
+    @Autowired
+    private HotRankFeignClient hotRankFeignClient;
+    @Autowired
+    private ChartFeignClient chartFeignClient;
     @Override
     @Tool("根据用户的个人榜单，以及听过的榜单。结合用户喜欢的风格，流派来推荐音乐榜单")
     public List<MyRankWithSong> getMusicChart(@P("去数据库查询的关键词，如风格，歌手") String keyword,
                                               @P("用户的1唯一身份userId") int  userId) {
-        if(StringUtils.isBlank(keyword)){
+        if (StringUtils.isBlank(keyword)) {
             return Collections.emptyList();
-        }else{
-            log.info("准备模糊查询数据库相关歌曲");
-           return musicChartMapper.selectChart(keyword.trim(),userId);
+        } else {
+            log.info("准备调用 service-chart 查询相关榜单");
+            Result<List<MyRankWithSong>> result = chartFeignClient.searchRanks(keyword.trim(), userId);
+            return result != null && result.getData() != null ? result.getData() : Collections.emptyList();
         }
     }
     @Override

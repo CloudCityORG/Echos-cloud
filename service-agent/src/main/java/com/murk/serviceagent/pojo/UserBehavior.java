@@ -1,4 +1,4 @@
-﻿package com.murk.serviceagent.pojo;
+package com.murk.serviceagent.pojo;
 
 import lombok.Data;
 

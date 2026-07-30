@@ -1,4 +1,4 @@
-﻿package com.murk.serviceuser.Mapper;
+package com.murk.serviceuser.Mapper;
 
 import com.github.pagehelper.Page;
 import com.github.yulichang.wrapper.MPJLambdaWrapper;
@@ -35,4 +35,10 @@ public interface UserTagsMapper {
 
 @Select("select * from user_tags where user_id=#{currentUserId} and tag_id=#{tagId}")
     UserTags selectByIdinuser(Integer tagId, Integer currentUserId);
+
+    @Select("SELECT tag_id FROM user_tags WHERE user_id = #{userId}")
+    List<Integer> selectTagIdsByUserId(Integer userId);
+
+    @Update("UPDATE user_tags SET tag_id = #{targetTagId} WHERE user_id = #{userId} AND tag_id = #{oldTagId}")
+    int updateUserTagAssociation(Integer userId, Integer oldTagId, Integer targetTagId);
 }

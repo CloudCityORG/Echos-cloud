@@ -1,7 +1,7 @@
-﻿package com.murk.serviceuser.Controller;
+package com.murk.serviceuser.Controller;
 
+import com.murk.commonlib.dto.CommonLoveVO;
 import com.murk.serviceuser.Service.FriendService;
-import com.murk.servicevote.dto.CommonLoveVO;
 import com.murk.serviceuser.dto.UserSimpleVO;
 import com.murk.commonlib.utils.JwtUtils;
 import com.murk.commonlib.utils.Result;

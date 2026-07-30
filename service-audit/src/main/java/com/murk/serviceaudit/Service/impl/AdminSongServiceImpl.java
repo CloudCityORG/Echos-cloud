@@ -1,10 +1,12 @@
-﻿package com.murk.serviceaudit.Service.impl;
+package com.murk.serviceaudit.Service.impl;
 
+import com.murk.commonlib.api.ChartFeignClient;
 import com.murk.serviceaudit.Mapper.AdminSongMapper;
 import com.murk.serviceaudit.Service.AdminSongService;
 import com.murk.serviceaudit.dto.ApplySongVo;
 import com.murk.commonlib.pojo.Singer;
 import com.murk.commonlib.pojo.Song;
+import com.murk.commonlib.utils.Result;
 
 import org.jaudiotagger.audio.AudioFile;
 import org.jaudiotagger.tag.FieldKey;
@@ -28,6 +30,8 @@ public class AdminSongServiceImpl implements AdminSongService {
     private static final Logger log = LoggerFactory.getLogger(AdminSongServiceImpl.class);
     @Autowired
     private AdminSongMapper adminSongMapper;
+    @Autowired
+    private ChartFeignClient chartFeignClient;
     @Value("${music.file.path:D:/music/music_files/}")
     private String storagePath;
 
@@ -52,14 +56,20 @@ public class AdminSongServiceImpl implements AdminSongService {
           }
 
 
-          // 4. 保存歌曲信息到数据库
+          // 4. 保存歌曲信息到 chart 库
           Song song = new Song();
           Singer singer = new Singer();
           song.setSongName(title);
           singer.setSingerName(artist);
           song.setSongurl(mp3File.getAbsolutePath());
-          adminSongMapper.insertSong(song);
-          adminSongMapper.insertSinger(singer);
+          Result<Integer> songResult = chartFeignClient.addSong(song);
+          Result<Integer> singerResult = chartFeignClient.addSinger(singer);
+          if (songResult != null && songResult.getData() != null) {
+              song.setSongId(songResult.getData());
+          }
+          if (singerResult != null && singerResult.getData() != null) {
+              singer.setSingerId(singerResult.getData());
+          }
 
           // 5. 清理临时文件
           tempNcm.delete();

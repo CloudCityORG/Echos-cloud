@@ -1,4 +1,4 @@
-﻿package com.murk.servicewebsocket.Controller;
+package com.murk.servicewebsocket.Controller;
 
     import com.murk.servicewebsocket.config.NativeWebSocketServer;
     import org.springframework.web.bind.annotation.GetMapping;

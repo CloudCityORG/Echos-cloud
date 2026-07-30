@@ -1,4 +1,4 @@
-﻿package com.murk.serviceaudit.dto;
+package com.murk.serviceaudit.dto;
 
 import com.murk.commonlib.dto.PersonalRank;
 import com.murk.commonlib.dto.RankSong;

@@ -1,8 +1,7 @@
-﻿package com.murk.serviceuser.Service;
+package com.murk.serviceuser.Service;
 
-import com.murk.servicevote.dto.CommonLoveVO;
+import com.murk.commonlib.dto.CommonLoveVO;
 import com.murk.serviceuser.dto.UserSimpleVO;
-import org.apache.ibatis.annotations.Select;
 
 public interface FriendService {
 

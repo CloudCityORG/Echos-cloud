@@ -1,7 +1,8 @@
-﻿package com.murk.servicechart.Mapper;
+package com.murk.servicechart.Mapper;
 
 
 import com.murk.commonlib.dto.RankTag;
+import com.murk.commonlib.pojo.RankTags;
 import com.murk.commonlib.pojo.Tags;
 import org.apache.ibatis.annotations.*;
 
@@ -29,4 +30,15 @@ public interface rankTagRelMapper {
 
      @Update("UPDATE rank_tags SET tag_id = #{targetTagId} WHERE user_id = #{userId} AND tag_id = #{oldTagId}")
      int updateRankTagAssociation(Integer userId, Integer oldTagId, Integer targetTagId);
+
+     @Select("SELECT tag_id FROM rank_tags WHERE rank_id = #{rankId} AND user_id = #{userId}")
+     List<Integer> selectTagIdsByRankIdAndUserId(Integer rankId, Integer userId);
+
+     @Select("SELECT rank_id FROM personal_rank WHERE user_id = #{userId}")
+     List<Integer> selectRankIdsByUserId(Integer userId);
+
+     List<Tags> selectRankTags(Integer rankId);
+
+     @Select("SELECT * FROM rank_tags WHERE rank_id = #{rankId}")
+     List<RankTags> selectRankTagList(Integer rankId);
 }

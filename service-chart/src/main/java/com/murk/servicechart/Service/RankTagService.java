@@ -1,6 +1,6 @@
-﻿package com.murk.servicechart.Service;
+package com.murk.servicechart.Service;
 
-import com.murk.servicechart.dto.TagsDTO;
+import com.murk.commonlib.dto.TagsDTO;
 import com.murk.commonlib.pojo.Tags;
 import org.apache.ibatis.annotations.Select;
 import org.springframework.stereotype.Service;

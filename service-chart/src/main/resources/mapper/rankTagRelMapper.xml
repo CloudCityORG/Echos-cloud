@@ -10,10 +10,16 @@
     <insert id="add" useGeneratedKeys="true">
 insert into rank_tags(tag_id,rank_id,user_id,create_time) values(#{tagId},#{rankId},#{userId},#{createTime})
     </insert>
-    <select id="selectByRankingIdAndUserId" resultType="com.murk.servicechart.pojo.Tags">
+    <select id="selectByRankingIdAndUserId" resultType="com.murk.commonlib.pojo.Tags">
 
 select * from tags_dictionary where tag_id in
                                     (select tag_id from rank_tags where rank_id=#{rankId} and user_id=#{userId})
                               order by use_count desc
+    </select>
+    <select id="selectRankTags" resultType="com.murk.commonlib.pojo.Tags">
+        select d.* from tags_dictionary d
+        inner join rank_tags r on d.tag_id = r.tag_id
+        where r.rank_id = #{rankId}
+        order by d.use_count asc
     </select>
 </mapper>

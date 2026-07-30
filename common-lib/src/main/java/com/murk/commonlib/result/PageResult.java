@@ -1,4 +1,4 @@
-﻿package com.murk.commonlib.result;
+package com.murk.commonlib.result;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

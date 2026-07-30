@@ -65,6 +65,7 @@ public class HotRankServiceImpl implements HotRankService {
     private static final String Love_Key = "love:user:%d:rank:%d";
     private static final String Vote_Key = "vote:user:%d:rank:%d";
     private static final String Vote_Count_Key = "music:rank:vote:count:%d";
+    private static final String Love_Count_Key = "music:rank:love:count:%d";
 
     private final String ZSET_REBUILD_KEY = "MUSIC:RANK:VOTE:REBUILD_LOCK";
     private final long ZSET_LOCK_TIMEOUT = 30L;//互斥锁过期时间
@@ -82,6 +83,15 @@ public class HotRankServiceImpl implements HotRankService {
     @Autowired
     private WebSocketFeignClient webSocketFeignClient;
 
+    private PersonalRank getRankById(Integer rankId) {
+        Result<PersonalRank> result = chartFeignClient.getRankById(rankId);
+        return result != null ? result.getData() : null;
+    }
+
+    private Comment getCommentById(Integer comId) {
+        Result<Comment> result = chartFeignClient.getCommentById(comId);
+        return result != null ? result.getData() : null;
+    }
 
     @Override
     public Integer caculateHotRank(Integer rankId) {
@@ -202,7 +212,7 @@ public class HotRankServiceImpl implements HotRankService {
                 if (lastTopRankId == null ||
                         !lastTopRankId.equals(currentTopRankIdStr)) {
 
-                    PersonalRank topRank = musicHotRankMapper.selectRankById(Integer.valueOf(currentTopRankIdStr));
+                    PersonalRank topRank = getRankById(Integer.valueOf(currentTopRankIdStr));
                     String displayName = (topRank != null && topRank.getRankName() != null)
                             ? topRank.getRankName() : "榜单#" + currentTopRankIdStr;
 
@@ -233,7 +243,7 @@ public class HotRankServiceImpl implements HotRankService {
             }
 
             if (personalMsg != null) {
-                PersonalRank currentRank = musicHotRankMapper.selectRankById(Math.toIntExact(rankId));
+                PersonalRank currentRank = getRankById(Math.toIntExact(rankId));
                 if (currentRank != null) {
                     Integer targetUserId = currentRank.getUserId();
                     if (targetUserId != null) {
@@ -268,7 +278,6 @@ public class HotRankServiceImpl implements HotRankService {
     //有一個严重问题Redis重启那这个Key就丢失，那如果此时有请求来，由于redis挂了，那所有的请求就会直接到DB，导致DB压力过大
     //这就是臭名远扬的缓存击穿，那采取的解决方案是互斥锁去保护，本质：大量请求去抢一个锁，抢到的这个唯一就去调用Mysql方法建立Zset
     //然后释放锁，其他请求发现锁存在，直接返回
-    @Override
     public Set<String> getHotRankIdWithMutex(int start, int end) {
         Set<String> result = getHotRankId(start, end);
         if (result != null || !result.isEmpty()) {
@@ -305,15 +314,15 @@ public class HotRankServiceImpl implements HotRankService {
     private void rebuildHotRankZset() {
         log.info("开始从mysql重建热门榜单");
         long startTime = System.currentTimeMillis();//记录开始时间
-        List<PersonalRank> allRanks = musicHotRankMapper.selectAllRanks();
-        if (allRanks == null || allRanks.isEmpty()) {
+        Result<List<Integer>> rankIdsResult = chartFeignClient.getAllRankIds();
+        List<Integer> rankIds = rankIdsResult != null ? rankIdsResult.getData() : null;
+        if (rankIds == null || rankIds.isEmpty()) {
             log.warn("mysql中无数据");
             return;
         }
         long timestamp = System.currentTimeMillis() / 1000;//获取当前时间戳
         final long BASE = 10_000_000_000L;//基数
-        for (PersonalRank rank : allRanks) {
-            Integer rankId = rank.getRankId();
+        for (Integer rankId : rankIds) {
             Integer hotScore = caculateHotRank(rankId);//计算热度
             long score = timestamp - BASE + hotScore;//计算得分
             stringRedisTemplate.opsForZSet().add(HOT_RANK_ZSET_KEY, rankId.toString(), score);//添加到redis中
@@ -354,7 +363,7 @@ public class HotRankServiceImpl implements HotRankService {
         Boolean isFirstVote = stringRedisTemplate.opsForValue().setIfAbsent(votekey, "1", 24, TimeUnit.HOURS);
         if (Boolean.TRUE.equals(isFirstVote)) {
             // --- 分支一：点赞 ---
-            PersonalRank v = musicHotRankMapper.selectRankById(rankId);
+            PersonalRank v = getRankById(rankId);
             if (v == null) {
                 stringRedisTemplate.delete(votekey);
                 return false;
@@ -413,7 +422,7 @@ public class HotRankServiceImpl implements HotRankService {
         Boolean isFirstLove = stringRedisTemplate.opsForValue().setIfAbsent(lovekey, "1", 24, TimeUnit.HOURS);
         if (Boolean.TRUE.equals(isFirstLove)) {
             // --- 分支一：收藏 ---
-            PersonalRank l = musicHotRankMapper.selectRankById(rankId);
+            PersonalRank l = getRankById(rankId);
             if (l == null) {
                 stringRedisTemplate.delete(lovekey);
                 return false;
@@ -445,7 +454,7 @@ public class HotRankServiceImpl implements HotRankService {
     @Transactional
     public boolean deleteVote(Integer rankId, Integer userId) {
         // 原有逻辑
-        PersonalRank personalRank = musicHotRankMapper.selectRankById(rankId);
+        PersonalRank personalRank = getRankById(rankId);
         if (personalRank == null) {
             // 新增日志：打印榜单不存在的提示
             log.warn("【取消点赞】榜单不存在！rankId={}, userId={}", rankId, userId);
@@ -466,7 +475,7 @@ public class HotRankServiceImpl implements HotRankService {
     @Override
     @Transactional
     public boolean deleteLove(Integer rankId, Integer userId) {
-        PersonalRank personalRank = musicHotRankMapper.selectRankById(rankId);
+        PersonalRank personalRank = getRankById(rankId);
         if (personalRank == null) {
             log.warn("【取消收藏】榜单不存在！rankId={}, userId={}", rankId, userId);
             return false;
@@ -481,7 +490,8 @@ public class HotRankServiceImpl implements HotRankService {
 
     @Override
     public List<CommentVo> selectComment(Integer rankId, Integer userId) {
-        List<CommentVo> list = musicHotRankMapper.selectComment(rankId, userId);
+        Result<List<CommentVo>> result = chartFeignClient.getComments(rankId, userId);
+        List<CommentVo> list = result != null && result.getData() != null ? result.getData() : Collections.emptyList();
         System.out.println("查询出的评论数：" + list.size());
         return list;
     }
@@ -489,21 +499,21 @@ public class HotRankServiceImpl implements HotRankService {
     @Override
     @Transactional
     public boolean deleteComment(Integer comId, Integer userId) {
-        Comment comment = musicHotRankMapper.selectCommentById(comId);
+        Comment comment = getCommentById(comId);
         if (comment == null) {
             return false;
         }
         if (comment.getUserId() != userId) {
             throw new RuntimeException("只能删除自己的评论");
         }
-        int result = musicHotRankMapper.updateComment(comId, 1);
-        return result > 0;
+        Result<Void> result = chartFeignClient.updateComment(comId, 1);
+        return result != null && result.getCode() == 1;
     }
 
     @Override
     @Transactional
     public boolean insertLike(Integer userId, Integer comId) {
-        Comment comment = musicHotRankMapper.selectCommentById(comId);
+        Comment comment = getCommentById(comId);
         if (comment == null || comment.getIdDelete() == 1) {
             return false;
         }
@@ -514,7 +524,7 @@ public class HotRankServiceImpl implements HotRankService {
     @Override
     @Transactional
     public boolean deleteLike(Integer comId, Integer userId) {
-        Comment comment = musicHotRankMapper.selectCommentById(comId);
+        Comment comment = getCommentById(comId);
         if (comment == null || comment.getIdDelete() == 1) {
             return false;
         }
@@ -666,37 +676,30 @@ public class HotRankServiceImpl implements HotRankService {
         }
     }
 
-    @Override
     public Integer CountVote(Integer rankId) {
         return musicHotRankMapper.CountVote(rankId);
     }
 
-    @Override
     public Integer CountLove(Integer rankId) {
         return musicHotRankMapper.CountLove(rankId);
     }
 
-    @Override
     public int countVote(Integer rankId, Integer userId) {
         return musicHotRankMapper.countVote(rankId, userId);
     }
 
-    @Override
     public int countLove(Integer rankId, Integer userId) {
         return musicHotRankMapper.countLove(rankId, userId);
     }
 
-    @Override
     public List<Integer> getLovedRankIds(Integer userId, Integer pageSize, Integer offset) {
         return musicHotRankMapper.selectLovedRankIds(userId, pageSize, offset);
     }
 
-    @Override
     public int countLike(Integer comId) {
         return musicHotRankMapper.countLike(comId);
     }
 
-    @Override
     public int countLike(Integer comId, Integer userId) {
         return musicHotRankMapper.countLikeByUser(comId, userId);
     }
@@ -704,7 +707,6 @@ public class HotRankServiceImpl implements HotRankService {
     //下方依旧互斥锁的逻辑
     //用于应对榜单缓存过期导致大量请求打在DB上
     //当某个key过期时，操作DB去访问，抢那一个锁，抢到后这个请求马上去恢复过期键，其他所有请求都可看见修复成功的键
-    @Override
     public List<MyRankWithSong> getHotRankWithCache(List<Long> rankIds) {
         List<MyRankWithSong> finalList = new ArrayList<>();// 🧺 篮子A：装"已经拿到手的资料"
         List<Long> missingIds = new ArrayList<>();//📝 便签：记"档案室还缺谁的资料"
@@ -741,7 +743,9 @@ public class HotRankServiceImpl implements HotRankService {
             }
         }
         if (!missingIds.isEmpty()) {//有便签，去数据库恢复
-            List<MyRankWithSong> dbList = musicHotRankMapper.listByIds(missingIds);
+            List<Integer> intIds = missingIds.stream().map(Long::intValue).collect(Collectors.toList());
+            Result<List<MyRankWithSong>> rankResult = chartFeignClient.getRanksByIds(intIds);
+            List<MyRankWithSong> dbList = rankResult != null && rankResult.getData() != null ? rankResult.getData() : Collections.emptyList();
             for (MyRankWithSong song : dbList) {
                 String key = RANK_DETAIL_KEY_PREFIX + song.getRankId();//缓存key
                 redisTemplate.opsForValue().set(key, JSON.toJSONString(song),//缓存写入redis

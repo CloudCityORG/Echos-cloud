@@ -1,4 +1,4 @@
-﻿package com.murk.serviceuser.dto;
+package com.murk.serviceuser.dto;
 
 import lombok.Data;
 
