@@ -6,6 +6,7 @@ import com.murk.commonlib.utils.Result;
 import com.murk.commonlib.dto.CommentVo;
 import com.murk.commonlib.dto.MyRankWithSong;
 import com.murk.servicevote.Service.HotRankService;
+import com.murk.servicevote.mq.UserBehaviorProducer;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +33,9 @@ public class MusicHotRankController {
 
     @Autowired
     private StringRedisTemplate stringRedisTemplate;
+
+    @Autowired
+    private UserBehaviorProducer userBehaviorProducer;
 
 
 
@@ -112,6 +116,8 @@ public class MusicHotRankController {
                 // 这里调用后，主线程会立刻继续往下走，不会等战报发完
                 // 记得转成 Long
                 hotRankService.updateHotRank(rankId);
+                // 发送用户行为事件到 Kafka，供 agent 服务消费
+                userBehaviorProducer.sendRankLikeEvent(userId, rankId);
 
                 return Result.success("点赞成功，战报正在后台生成...");
             }else {
@@ -136,6 +142,8 @@ public class MusicHotRankController {
             }
             boolean result=hotRankService.insertLove(userId,rankId);
             if(result==true){
+                // 发送榜单收藏事件到 Kafka
+                userBehaviorProducer.sendRankCollectEvent(userId, rankId, false);
                 return Result.success();
             }else {
                 return Result.error("点赞榜单失败");
@@ -160,6 +168,8 @@ public class MusicHotRankController {
             }
             boolean result=hotRankService.deleteVote(rankId,userId);
             if(result==true){
+                // 发送取消点赞事件到 Kafka
+                userBehaviorProducer.sendRankLikeEvent(userId, rankId, true);
                 return Result.success("success");
             }else{
                 return Result.error("取消点赞失败");
@@ -185,6 +195,8 @@ public class MusicHotRankController {
             log.info("【取消点赞】删除条件：userId={}, rankId={}", userId, rankId);
             boolean result=hotRankService.deleteLove(rankId,userId);
             if(result==true){
+                // 发送取消收藏事件到 Kafka
+                userBehaviorProducer.sendRankCollectEvent(userId, rankId, true);
                 return Result.success("success");
             }else{
                 return Result.error("取消点赞失败");

@@ -45,6 +45,7 @@
         <langchain4j.version>0.31.0</langchain4j.version>
         <jaudiotagger.version>3.0.1</jaudiotagger.version>
         <elasticsearch.version>7.17.0</elasticsearch.version>
+        <spring-kafka.version>3.1.0</spring-kafka.version>
     </properties>
 
     <dependencyManagement>
@@ -155,6 +156,13 @@
                 <groupId>net.jthink</groupId>
                 <artifactId>jaudiotagger</artifactId>
                 <version>${jaudiotagger.version}</version>
+            </dependency>
+
+            <!-- Spring Kafka -->
+            <dependency>
+                <groupId>org.springframework.kafka</groupId>
+                <artifactId>spring-kafka</artifactId>
+                <version>${spring-kafka.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.murk.serviceagent.Mapper.UserBehaviorEventMapper">
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="eventId">
+        INSERT INTO user_behavior_event (
+            user_id, target_type, target_id, action_type, source,
+            tag_ids, score, cancelled, action_time, create_time
+        ) VALUES (
+            #{userId}, #{targetType}, #{targetId}, #{actionType}, #{source},
+            #{tagIds}, #{score}, #{cancelled}, #{actionTime}, #{createTime}
+        )
+    </insert>
+
+    <select id="selectByUserId" resultType="com.murk.serviceagent.pojo.UserBehaviorEventEntity">
+        SELECT event_id, user_id, target_type, target_id, action_type, source,
+               tag_ids, score, cancelled, action_time, create_time
+        FROM user_behavior_event
+        WHERE user_id = #{userId}
+        ORDER BY action_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectRecentEvents" resultType="com.murk.serviceagent.pojo.UserBehaviorEventEntity">
+        SELECT event_id, user_id, target_type, target_id, action_type, source,
+               tag_ids, score, cancelled, action_time, create_time
+        FROM user_behavior_event
+        WHERE user_id = #{userId}
+          AND action_type = #{actionType}
+        ORDER BY action_time DESC
+        LIMIT #{limit}
+    </select>
+</mapper>

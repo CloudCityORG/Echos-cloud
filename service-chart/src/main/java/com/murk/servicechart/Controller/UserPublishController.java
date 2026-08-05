@@ -9,6 +9,7 @@ import com.murk.servicechart.Service.UserPublishService;
 import com.murk.servicechart.dto.CommentVo;
 import com.murk.servicechart.dto.MyRankWithSong;
 import com.murk.servicechart.dto.RankAddRequest;
+import com.murk.servicechart.mq.UserBehaviorProducer;
 import com.murk.commonlib.utils.JwtUtils;
 import com.murk.commonlib.utils.Result;
 import com.murk.commonlib.utils.ThreadLocalUtil;
@@ -36,6 +37,8 @@ public class UserPublishController {
     private UserPublishService userPublishService;
     @Autowired
     private VoteFeignClient voteFeignClient;
+    @Autowired
+    private UserBehaviorProducer userBehaviorProducer;
 
     @GetMapping("/publish")
     @Operation(summary = "发布榜单", description = "发布榜单")
@@ -192,6 +195,8 @@ public class UserPublishController {
 
             boolean result=userPublishService.insertLove(userId,rankId);
             if(result==true){
+                // 发送榜单收藏事件到 Kafka
+                userBehaviorProducer.sendRankCollectEvent(userId, rankId, null, false);
                 return Result.success();
             }else {
                 return Result.error("收藏榜单失败");
@@ -243,6 +248,8 @@ public class UserPublishController {
             log.info("【取消点赞】删除条件：userId={}, rankId={}", userId, rankId);
             boolean result=userPublishService.deleteLove(rankId,userId);
             if(result==true){
+                // 发送取消收藏事件到 Kafka
+                userBehaviorProducer.sendRankCollectEvent(userId, rankId, null, true);
                 return Result.success("success");
             }else{
                 return Result.error("取消点赞失败");

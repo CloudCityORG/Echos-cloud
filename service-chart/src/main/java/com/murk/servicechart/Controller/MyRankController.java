@@ -7,6 +7,7 @@ import com.murk.servicechart.Service.MyRankService;
 import com.murk.servicechart.dto.CommentVo;
 import com.murk.servicechart.dto.EditRank;
 import com.murk.servicechart.dto.MyRankWithSong;
+import com.murk.servicechart.mq.UserBehaviorProducer;
 import com.murk.commonlib.pojo.UserInfo;
 import com.murk.commonlib.utils.JwtUtils;
 import com.murk.commonlib.utils.Result;
@@ -28,6 +29,8 @@ import java.util.List;
 public class MyRankController {
     @Autowired
     private MyRankService myRankService;
+    @Autowired
+    private UserBehaviorProducer userBehaviorProducer;
 
 
     @GetMapping("/my")//没有调用Service，只负责页面跳转，没有要操作数据库的逻辑
@@ -116,7 +119,12 @@ public class MyRankController {
         if(paramuserId==null){
             throw new RuntimeException("token不能为空");
         }
-        return myRankService.getRank(rankId);
+        MyRankWithSong rank = myRankService.getRank(rankId);
+        // 发送榜单浏览事件到 Kafka（仅在用户已登录时）
+        if (rank != null && paramuserId != null) {
+            userBehaviorProducer.sendRankBrowseEvent(paramuserId, rankId, null);
+        }
+        return rank;
     }
 
     @GetMapping("/singer")

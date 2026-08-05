@@ -73,6 +73,20 @@ public class RankApiController {
         return Result.success(userPublishMapper.selectAllRankIds());
     }
 
+    @GetMapping("/rank/list")
+    public Result<List<com.murk.commonlib.dto.MyRankWithSong>> listRanks(
+            @RequestParam(value = "category", required = false) Integer category) {
+        List<com.murk.servicechart.dto.MyRankWithSong> source;
+        if (category != null) {
+            source = userPublishMapper.selectPublishRank(category, Integer.MAX_VALUE, 0);
+        } else {
+            source = myRankService.getRanksByIds(userPublishMapper.selectAllRankIds());
+        }
+        return Result.success(source.stream()
+                .map(this::convert)
+                .collect(Collectors.toList()));
+    }
+
     @GetMapping("/rank/{rankId}")
     public Result<PersonalRank> getRankById(@PathVariable("rankId") Integer rankId) {
         return Result.success(userPublishMapper.selectRankById(rankId));

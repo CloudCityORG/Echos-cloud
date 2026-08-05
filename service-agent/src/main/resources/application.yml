@@ -35,6 +35,30 @@ spring:
       discovery:
         server-addr: localhost:8848
         namespace: a2f1df1d-29d7-4bfe-85f5-7beec09bd563
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      retries: 3
+      acks: all
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: true
+    consumer:
+      group-id: service-agent-consumer
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: com.murk.commonlib.dto,com.murk.serviceagent.pojo,java.util,java.lang
+    listener:
+      ack-mode: manual_immediate
+      missing-topics-fatal: false
+
+kafka:
+  topic:
+    user-behavior: user-behavior
 server:
   port: 8083
 

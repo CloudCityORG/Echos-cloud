@@ -13,4 +13,6 @@ public class UserBehavior {
     private int STId;
     private int userId;
     private LocalDateTime lastPlayTime;
+    private Integer source;
+    private Integer actionType;
 }
