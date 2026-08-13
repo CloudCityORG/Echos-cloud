@@ -1,0 +1,6 @@
+# 本地测试环境配置：关闭 Elasticsearch，避免本地没有 ES 时启动失败
+spring:
+  data:
+    elasticsearch:
+      repositories:
+        enabled: false

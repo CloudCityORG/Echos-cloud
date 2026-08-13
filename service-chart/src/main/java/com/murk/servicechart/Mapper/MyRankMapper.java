@@ -1,0 +1,55 @@
+package com.murk.servicechart.Mapper;
+
+import com.murk.commonlib.pojo.Comment;
+import com.murk.commonlib.pojo.Singer;
+import com.murk.commonlib.pojo.Song;
+import com.murk.servicechart.dto.CommentVo;
+import com.murk.servicechart.dto.MyRankWithSong;
+import com.murk.commonlib.dto.PersonalRank;
+import com.murk.commonlib.dto.RankSong;
+import com.murk.commonlib.pojo.UserInfo;
+import org.apache.ibatis.annotations.*;
+
+import java.util.List;
+
+@Mapper
+public interface MyRankMapper {
+
+    List<MyRankWithSong> selectMyRank(@Param("userId")Integer userId,@Param("pageSize")Integer pageSize,
+                                      @Param("offset")Integer offset);
+    @Select("select count(*) from personal_rank where user_id=#{userId}")
+    Integer selectMyRankTotal(@Param("userId")Integer userId);
+
+    MyRankWithSong getRank(Integer rankId);
+
+    List<Singer> selectSinger(Integer categoryId);
+
+    List<Song> selectSong(Integer singerId);
+
+    @Update("update personal_rank set rank_name=#{rankName},publish_time=now() where rank_id=#{rankId}")
+    void insertNewRankname(@Param("rankId") Integer rankId,@Param("rankName") String rankName);
+    @Delete("delete from rank_song where rank_id=#{rankId}")
+   Integer deleteOldRankname(Integer rankId);
+
+    void insertNewRank(List<RankSong> newSongs);
+
+    List<MyRankWithSong> selectLoveSong(@Param("rankIds") List<Integer> rankIds);
+
+    @Delete("delete from personal_rank where rank_id=#{rankId}")
+    boolean deleteRank(Integer rankId);
+
+    List<CommentVo> selectComment(Integer rankId, Integer userId);
+
+    Comment selectCommentById(Integer comId);
+
+    @Update("update comment set id_delete=#{idDelete}  where com_id=#{comId}")
+    int updateComment(Integer comId, int idDelete);
+
+    @Select("select * from personal_rank where rank_id=#{rankId}")
+    PersonalRank selectRankById(Integer rankId);
+
+    @Select("select user_id from personal_rank where rank_id=#{rankId}")
+    Integer selectCreatorIdByRankId(Integer rankId);
+
+    List<com.murk.servicechart.dto.MyRankWithSong> getRankByIds(List<Integer> rankIds);
+}

@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.murk.servicevote.Mapper.HotRankMapper">
+    <insert id="insertVote">
+        insert into vote_record  (rank_id,vote_time,user_id)
+        values (#{rankId},now(),#{userId})
+    </insert>
+    <insert id="insertLove">
+        insert into love_record(user_id,rank_id,love_time)
+        values (#{userId},#{rankId},now())
+    </insert>
+    <insert id="insertLike">
+        insert into like_comment(user_id,com_id) values (#{userId},#{comId})
+    </insert>
+
+    <select id="CountVote" resultType="java.lang.Integer">
+        select count(*) from vote_record where rank_id=#{rankId} group by rank_id;
+    </select>
+    <select id="CountLove" resultType="java.lang.Integer">
+        select count(*) from love_record where rank_id=#{rankId} group by rank_id;
+    </select>
+    <select id="selectLovedRankIds" resultType="java.lang.Integer">
+        select distinct rank_id from love_record where user_id=#{userId} order by love_time desc limit #{pageSize} offset #{offset}
+    </select>
+</mapper>

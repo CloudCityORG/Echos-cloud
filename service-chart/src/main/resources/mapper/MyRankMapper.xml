@@ -1,0 +1,145 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.murk.servicechart.Mapper.MyRankMapper">
+
+    <select id="selectMyRank" resultMap="MyRankWithSongsResultMap">
+        select a.rank_id,a.rank_name,a.vote_count,a.love_count,a.publish_time,a.user_id,
+               b.rs_id,b.song_id,b.ranking,b.rank_update_time,c.song_name,d.singer_name
+        from (select p.rank_id,p.rank_name,p.publish_time,p.user_id,0 as vote_count,0 as love_count
+              from personal_rank as p
+              where p.user_id=#{userId}
+        group by p.rank_id, p.rank_name, p.publish_time
+        order by publish_time asc
+        limit #{pageSize} offset #{offset}) a
+        left join rank_song as b on a.rank_id = b.rank_id
+        left join song as c on c.song_id=b.song_id
+        left join singer as d on c.singer_id = d.singer_id
+        order by b.rank_update_time desc, b.ranking asc
+    </select>
+
+    <resultMap id="MyRankWithSongsResultMap" type="com.murk.servicechart.dto.MyRankWithSong">
+        <id property="rankId" column="rank_id"/>
+        <result property="rankName" column="rank_name"/>
+        <result property="voteCount" column="vote_count"/>
+        <result property="loveCount" column="love_count"/>
+        <result property="publishTime" column="publish_time"/>
+        <result property="userId" column="user_id"/>
+        <collection property="rankSongList" ofType="com.murk.commonlib.dto.RankSong">
+            <id property="rsId" column="rs_id"/>
+            <result property="songId" column="song_id"/>
+            <result property="songName" column="song_name"/>
+            <result property="singerName" column="singer_name"/>
+            <result property="ranking" column="ranking"/>
+            <result property="rankUpdateTime" column="rank_update_time"/>
+        </collection>
+    </resultMap>
+    <select id="getRank" resultMap="MyRankWithSongsResultMap">
+         select a.rank_id,a.rank_name,b.rs_id,b.song_id,b.ranking,b.rank_update_time
+         ,c.song_name from personal_rank as a left join rank_song as b
+         on a.rank_id = b.rank_id
+         left join song as c on b.song_id = c.song_id
+         where a.rank_id=#{rankId}
+    </select>
+
+    <resultMap id="MyRankWithSongResultMap" type="com.murk.servicechart.dto.MyRankWithSong">
+        <id property="rankId" column="rank_id"/>
+        <result property="rankName" column="rank_name"/>
+        <collection property="rankSongList" ofType="com.murk.commonlib.dto.RankSong">
+            <id property="rsId" column="rs_id"/>
+            <result property="songId" column="song_id"/>
+            <result property="songName" column="song_name"/>
+            <result property="ranking" column="ranking"/>
+            <result property="rankUpdateTime" column="rank_update_time"/>
+        </collection>
+    </resultMap>
+    <select id="selectSinger" resultType="com.murk.commonlib.pojo.Singer">
+        select singer_id,singer_name from singer where category_id=#{categoryId} and singer_status=1
+    </select>
+    <select id="selectSong" resultType="com.murk.commonlib.pojo.Song">
+        select song_id,song.song_name from song where singer_id=#{singerId} and song_status=1
+    </select>
+
+    <select id="selectLoveSong" resultMap="MyRankWithSongssResultMap">
+        select r.rs_id,r.ranking,r.rank_update_time,r.song_id,p.rank_id,p.rank_name,p.publish_time,
+               s.song_name,si.singer_name from
+            personal_rank as p
+                left join rank_song as r on r.rank_id=p.rank_id
+                left join song as s on r.song_id = s.song_id
+                left join singer as si on s.singer_id = si.singer_id
+        where p.rank_id in
+        <foreach collection="rankIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        order by r.rank_update_time asc,r.ranking asc
+    </select>
+
+    <resultMap id="MyRankWithSongssResultMap" type="com.murk.servicechart.dto.MyRankWithSong">
+        <id property="rankId" column="rank_id"/>
+        <result property="rankName" column="rank_name"/>
+        <result property="publishTime" column="publish_time"/>
+        <result property="username" column="username"/>
+        <collection property="rankSongList" ofType="com.murk.commonlib.dto.RankSong">
+            <id property="rsId" column="rs_id"/>
+            <result property="songId" column="song_id"/>
+            <result property="songName" column="song_name"/>
+            <result property="singerName" column="singer_name"/>
+            <result property="ranking" column="ranking"/>
+            <result property="rankUpdateTime" column="rank_update_time"/>
+        </collection>
+    </resultMap>
+    <select id="selectCommentById" resultType="com.murk.commonlib.pojo.Comment">
+        select * from comment where com_id=#{comId}
+    </select>
+    <select id="selectComment" resultMap="CommentVoResultMap">
+       select c.com_id,c.rank_id,c.user_id,c.parent_id,c.comment_content,c.comment_time,
+       0 as like_count,pc.user_id as parent_user_id,
+       0 as is_liked
+       from comment as c
+       left join comment pc on pc.parent_id=c.com_id
+       where c.rank_id=#{rankId} and c.id_delete=0
+       order by c.comment_time asc
+       limit 50
+    </select>
+    <resultMap id="CommentVoResultMap" type="com.murk.servicechart.dto.CommentVo">
+        <id property="comId" column="com_id"/>
+        <result property="rankId" column="rank_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="username" column="username"/>
+        <result property="comContent" column="comment_content"/>
+        <result property="comTime" column="comment_time"/>
+        <result property="parentId" column="parent_id"/>
+        <result property="parentUserId" column="parent_user_id"/>
+        <result property="likeCount" column="like_count"/>
+        <result property="isLiked" column="is_liked"/>
+        <result property="parentUsername" column="parent_username"/>
+    </resultMap>
+    <insert id="insertNewRank">
+        insert ignore into rank_song(rank_id,song_id,ranking,rank_update_time)
+        values
+            <foreach collection="list" item="item" separator=",">
+                (#{item.rankId},#{item.songId},#{item.ranking},now())
+            </foreach>
+    </insert>
+    <select id="getRankByIds" resultMap="MyRankWithSongsResultMap">
+        select a.rank_id,a.rank_name,a.publish_time,a.user_id,0 as vote_count,0 as love_count
+               ,b.rs_id,b.song_id,b.ranking,b.rank_update_time,
+               s.song_name,si.singer_name
+            from personal_rank a
+                     LEFT JOIN rank_song b ON b.rank_id = a.rank_id
+                     LEFT JOIN song s ON s.song_id = b.song_id
+                     LEFT JOIN singer si ON si.singer_id = s.singer_id
+            WHERE a.rank_id IN
+            <foreach collection="rankIds" item="id" open="(" separator="," close=")">
+            #{id}
+            </foreach>
+        order by field(a.rank_id,
+        <foreach collection="rankIds" item="id" separator=",">
+            #{id}
+        </foreach>
+        ),b.ranking asc
+    </select>
+
+</mapper>
