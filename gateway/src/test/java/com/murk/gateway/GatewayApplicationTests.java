@@ -1,4 +1,4 @@
-﻿package com.murk.gateway;
+package com.murk.gateway;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

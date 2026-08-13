@@ -26,9 +26,27 @@
         <groupId>com.mu-rk</groupId>
         <artifactId>common-lib</artifactId>
         <exclusions>
+            <!-- Gateway 是 Reactive 应用，排除 WebMVC -->
             <exclusion>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-web</artifactId>
+            </exclusion>
+            <!-- 排除 Gateway 不需要的数据库/缓存相关依赖，避免自动配置类找不到 MybatisPlusAutoConfiguration 报错 -->
+            <exclusion>
+                <groupId>com.github.yulichang</groupId>
+                <artifactId>mybatis-plus-join-boot-starter</artifactId>
+            </exclusion>
+            <exclusion>
+                <groupId>com.github.pagehelper</groupId>
+                <artifactId>pagehelper-spring-boot-starter</artifactId>
+            </exclusion>
+            <exclusion>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-jdbc</artifactId>
+            </exclusion>
+            <exclusion>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-data-redis</artifactId>
             </exclusion>
         </exclusions>
     </dependency>

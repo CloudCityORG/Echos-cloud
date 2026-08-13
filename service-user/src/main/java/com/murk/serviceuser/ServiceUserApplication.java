@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 
 @SpringBootApplication
-@EnableFeignClients
+@EnableFeignClients(basePackages = {"com.murk.serviceuser", "com.murk.commonlib.api"})
 public class ServiceUserApplication {
 
     public static void main(String[] args) {

@@ -17,9 +17,10 @@ public class GatewayRoutes {
                         .uri("lb://service-user")    // lb = load balance，从 Nacos 找服务
                 )
 
-                // 榜单服务
+                // 榜单服务：/api/chart/xxx 重写为 /api/xxx 再转发给 service-chart
                 .route("service-chart", r -> r
                         .path("/api/chart/**")
+                        .filters(f -> f.rewritePath("/api/chart/(?<segment>.*)", "/api/${segment}"))
                         .uri("lb://service-chart")
                 )
 

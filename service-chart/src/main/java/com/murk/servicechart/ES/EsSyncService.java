@@ -1,16 +1,19 @@
 package com.murk.servicechart.ES;
+
 import com.murk.commonlib.dto.RankSong;
-import com.murk.servicechart.dto.MyRankWithSong;
 import com.murk.servicechart.Mapper.UserPublishMapper;
 import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
+@Slf4j
 @Service
+@ConditionalOnProperty(name = "spring.data.elasticsearch.repositories.enabled", havingValue = "true", matchIfMissing = true)
 public class EsSyncService {
     @Autowired
     private SongSearchRepository songSearchRepository;
@@ -18,17 +21,20 @@ public class EsSyncService {
     private UserPublishMapper userPublishMapper;
     @Value("${myapp.category:1}")
     private int category;
+
     @PostConstruct
-    public void init(){
-        syncAllSongs(category, 100, 0);
+    public void init() {
+        try {
+            syncAllSongs(category, 100, 0);
+        } catch (Exception e) {
+            log.warn("ES 初始化同步失败，应用仍将继续启动: {}", e.getMessage(), e);
+        }
     }
 
-    public void syncAllSongs(int category, int pageSize, int offset){
-        List<MyRankWithSong> list = userPublishMapper.selectPublishRank(
-                category, pageSize, offset);
-        List<RankSong> list1=userPublishMapper.selectES();
-        for (RankSong rs : list1) {
-            // 2. 转成 ES 文档
+    public void syncAllSongs(int category, int pageSize, int offset) {
+        List<RankSong> list = userPublishMapper.selectES();
+        for (RankSong rs : list) {
+            // 转成 ES 文档
             Songdocument doc = new Songdocument();
             doc.setSongId(String.valueOf(rs.getSongId()));
             doc.setSongName(rs.getSongName());
@@ -37,10 +43,9 @@ public class EsSyncService {
             // rankName 暂时不填，或者用 rankId 查
             // doc.setRankName(rankName);
 
-            // 3. 存进 ES
+            // 存进 ES
             songSearchRepository.save(doc);
         }
-        System.out.println("✅ ES 同步完成！共 " + list.size() + " 条");
-
+        log.info("✅ ES 同步完成！共 {} 条", list.size());
     }
 }

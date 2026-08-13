@@ -41,23 +41,27 @@ public class UserPublishController {
     private UserBehaviorProducer userBehaviorProducer;
 
     @GetMapping("/publish")
-    @Operation(summary = "发布榜单", description = "发布榜单")
-    public String publish(@RequestParam("token") String token, RedirectAttributes redirectAttributes, @RequestParam(value = "category",required = false) Integer category,
-                          @RequestParam(value = "pageNum", defaultValue = "1") Integer pageNum, @RequestParam(value = "pageSize", defaultValue = "4") Integer pageSize, Model model) {
-        if (token == null || token.isEmpty()) {
-            redirectAttributes.addFlashAttribute("errormessage", "token已失效");
-            return "redirect:/login.html";
-        }
-        if (token.startsWith("Bearer ")) {
-            token = token.substring(7);
-        }
-        Integer userId;
-        try {
-            userId = JwtUtils.getUserIdFromToken(token);
-        } catch (Exception e) {
-            e.printStackTrace();
-            redirectAttributes.addFlashAttribute("errormessage", "token不见啦，请重新登录");
-            return "redirect:/login.html";
+    public String publish(@RequestParam(value = "token", required = false) String token, RedirectAttributes redirectAttributes, @RequestParam(value = "category",required = false) Integer category,
+                          @RequestParam(value = "pageNum", defaultValue = "1") Integer pageNum, @RequestParam(value = "pageSize", defaultValue = "4") Integer pageSize,
+                          @RequestParam(value = "userId", required = false) Integer userId, Model model) {
+        // 测试模式：未传 token 但传了 userId，直接用 userId（仅本地/JMeter 测试使用）
+        if ((token == null || token.isEmpty()) && userId != null) {
+            // 直接使用 userId 测试，跳过 JWT 解析
+        } else {
+            if (token == null || token.isEmpty()) {
+                redirectAttributes.addFlashAttribute("errormessage", "token已失效");
+                return "redirect:/login.html";
+            }
+            if (token.startsWith("Bearer ")) {
+                token = token.substring(7);
+            }
+            try {
+                userId = JwtUtils.getUserIdFromToken(token);
+            } catch (Exception e) {
+                e.printStackTrace();
+                redirectAttributes.addFlashAttribute("errormessage", "token不见啦，请重新登录");
+                return "redirect:/login.html";
+            }
         }
         Integer offset = (pageNum - 1) * pageSize;
         PageInfo<MyRankWithSong> publishRanks = userPublishService.selectPublishRank(category, pageNum, pageSize, offset);

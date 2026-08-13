@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>发布榜单</title>
+</head>
+<body>
+    <h1>发布榜单</h1>
+    <div th:if="${rankList != null and !rankList.isEmpty()}">
+        <ul>
+            <li th:each="rank : ${rankList}">
+                <span th:text="${rank.rankName}">榜单名称</span>
+            </li>
+        </ul>
+    </div>
+    <div th:if="${rankList == null or rankList.isEmpty()}">
+        <p>暂无发布榜单</p>
+    </div>
+</body>
+</html>

@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 
 @SpringBootApplication
-@EnableFeignClients
+@EnableFeignClients(basePackages = {"com.murk.servicevote", "com.murk.commonlib.api"})
 public class ServiceVoteApplication {
 
     public static void main(String[] args) {
