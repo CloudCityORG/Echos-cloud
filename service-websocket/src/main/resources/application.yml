@@ -11,11 +11,26 @@ spring:
           max-active: 8
           max-idle: 8
           min-idle: 2
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: service-websocket-consumer
+      auto-offset-reset: latest
+      enable-auto-commit: true
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: com.murk.commonlib.dto
   cloud:
     nacos:
       discovery:
         server-addr: localhost:8848
         namespace: a2f1df1d-29d7-4bfe-85f5-7beec09bd563
+
+kafka:
+  topic:
+    websocket-notify: websocket-notify
+
 server:
   port: 8086
 

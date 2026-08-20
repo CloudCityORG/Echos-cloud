@@ -31,5 +31,7 @@ services:
     command: >
       bash -c "
         /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists \
-          --topic user-behavior --partitions 3 --replication-factor 1
+          --topic user-behavior --partitions 3 --replication-factor 1 && \
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists \
+          --topic websocket-notify --partitions 3 --replication-factor 1
       "

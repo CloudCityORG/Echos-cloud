@@ -3,7 +3,6 @@ package com.murk.servicevote.Service.impl;
 import com.alibaba.fastjson.JSON;
 import com.murk.commonlib.api.ChartFeignClient;
 import com.murk.commonlib.api.UserFeginClient;
-import com.murk.commonlib.api.WebSocketFeignClient;
 import com.murk.commonlib.dto.*;
 import com.murk.commonlib.pojo.Comment;
 import com.murk.commonlib.utils.Result;
@@ -16,7 +15,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
@@ -31,6 +32,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -80,8 +82,12 @@ public class HotRankServiceImpl implements HotRankService {
     private ChartFeignClient chartFeignClient;
     @Autowired
     private UserFeginClient userFeginClient;
+
     @Autowired
-    private WebSocketFeignClient webSocketFeignClient;
+    private KafkaTemplate<String, WebSocketNotifyEvent> kafkaTemplate;
+
+    @Value("${kafka.topic.websocket-notify:websocket-notify}")
+    private String websocketNotifyTopic;
 
     private PersonalRank getRankById(Integer rankId) {
         Result<PersonalRank> result = chartFeignClient.getRankById(rankId);
@@ -222,11 +228,16 @@ public class HotRankServiceImpl implements HotRankService {
                             "恭喜 **" + displayName + "** 登顶热门榜首！"
                     );
 
-                    String jsonPublicMsg = JSON.toJSONString(publicReport);
+                    WebSocketNotifyEvent publicEvent = buildWebSocketNotifyEvent(
+                            WebSocketNotifyEvent.TYPE_PUBLIC,
+                            0,
+                            publicReport.getTitle(),
+                            publicReport.getDetail(),
+                            Integer.valueOf(currentTopRankIdStr)
+                    );
+                    kafkaTemplate.send(websocketNotifyTopic, currentTopRankIdStr, publicEvent);
 
-                    webSocketFeignClient.sendMessageToAll(jsonPublicMsg);
-
-                    log.info("📢 全服广播发送：{}", publicReport.getTitle());
+                    log.info("📢 全服广播事件已发送到 Kafka：{}", publicReport.getTitle());
 
                     redisTemplate.opsForValue().set("rank:last_top_user", currentTopRankIdStr);
                 }
@@ -254,11 +265,16 @@ public class HotRankServiceImpl implements HotRankService {
                                 personalMsg
                         );
 
-                        String jsonPersonalMsg = JSON.toJSONString(personalReport);
+                        WebSocketNotifyEvent personalEvent = buildWebSocketNotifyEvent(
+                                WebSocketNotifyEvent.TYPE_PERSONAL,
+                                targetUserId,
+                                personalReport.getTitle(),
+                                personalReport.getDetail(),
+                                rankId
+                        );
+                        kafkaTemplate.send(websocketNotifyTopic, String.valueOf(targetUserId), personalEvent);
 
-                        webSocketFeignClient.sendToUser(targetUserId.toString(), jsonPersonalMsg);
-
-                        log.info("🔒 私信发送给用户 {}: {}", targetUserId, personalMsg);
+                        log.info("🔒 私信事件已发送到 Kafka，目标用户 {}: {}", targetUserId, personalMsg);
                     }
                 }
             }
@@ -765,5 +781,17 @@ public class HotRankServiceImpl implements HotRankService {
                 .map(id -> songMap.get(id.intValue()))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
+    }
+
+    private WebSocketNotifyEvent buildWebSocketNotifyEvent(int type, int targetUserId,
+                                                           String title, String content, int bizId) {
+        WebSocketNotifyEvent event = new WebSocketNotifyEvent();
+        event.setType(type);
+        event.setTargetUserId(targetUserId);
+        event.setTitle(title);
+        event.setContent(content);
+        event.setBizId(bizId);
+        event.setTimestamp(LocalDateTime.now());
+        return event;
     }
 }
